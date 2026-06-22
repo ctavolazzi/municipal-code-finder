@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Municipal Code Finder — Property Owner's Edge</title>
+<!-- v0.1.0 -->
 <style>
 :root {
   --cream: #f5f0e6;
@@ -22,7 +23,6 @@
   --blue: #1e4d7b;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
   background: var(--cream);
   color: var(--ink);
@@ -32,657 +32,912 @@ body {
   min-height: 100vh;
 }
 
+/* ── Overlay & Modal ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30,15,10,.65);
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem 4rem;
+  overflow-y: auto;
+}
+.overlay.hidden { display: none; }
+.modal {
+  background: var(--paper);
+  border: 2px solid var(--chocolate);
+  box-shadow: 8px 8px 0 var(--chocolate);
+  width: 100%;
+  max-width: 660px;
+  position: relative;
+  margin: auto;
+}
+.modal-close {
+  position: absolute;
+  top: .6rem; right: .7rem;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--muted);
+  padding: .2rem .4rem;
+  line-height: 1;
+  z-index: 1;
+}
+.modal-close:hover { color: var(--rust); }
+
+/* ── Detail View ── */
+.detail-view { padding: 1.5rem; }
+.detail-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .75rem;
+  margin-bottom: .6rem;
+  flex-wrap: wrap;
+}
+.detail-actions { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.detail-title { font-size: 1.2rem; font-weight: 800; color: var(--chocolate); margin: .25rem 0 .5rem; line-height: 1.25; }
+.detail-desc { font-size: .93rem; margin-bottom: .75rem; }
+.detail-conditions { margin-bottom: .75rem; border-left: 3px solid var(--line); padding-left: .65rem; }
+.detail-conditions strong { color: var(--rust); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: .15rem; }
+.detail-conditions p { font-size: .87rem; color: var(--muted); }
+.detail-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: .65rem 0; }
+.detail-source {
+  display: inline-block;
+  margin: .4rem 0 .9rem;
+  font-weight: 700;
+  color: var(--burnt-orange);
+  text-decoration: none;
+  border-bottom: 2px solid var(--burnt-orange);
+  font-size: .93rem;
+}
+.notes-section { margin-top: .9rem; border-top: 1.5px solid var(--line); padding-top: .9rem; }
+.notes-section > label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: block; margin-bottom: .35rem; }
+.notes-section textarea {
+  width: 100%; min-height: 80px;
+  border: 1.5px solid var(--line);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: inherit; font-size: .9rem;
+  padding: .45rem .6rem;
+  resize: vertical; outline: none;
+}
+.notes-section textarea:focus { border-color: var(--burnt-orange); }
+.disclaimer-box {
+  margin-top: .9rem;
+  padding: .45rem .7rem;
+  background: var(--cream-dark);
+  border-left: 3px solid var(--gold);
+  font-size: .77rem;
+  color: var(--muted);
+}
+
+/* ── Fav buttons ── */
+.fav-star {
+  background: none; border: none;
+  font-size: 1.05rem; cursor: pointer;
+  padding: .1rem .25rem; line-height: 1;
+  color: var(--line);
+}
+.fav-star.active { color: var(--gold); }
+.fav-star:hover  { color: var(--gold); }
+.btn-fav-filter {
+  background: none;
+  border: 2px solid var(--line);
+  color: var(--muted);
+  padding: .4rem .7rem;
+  font-size: .85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-fav-filter:hover, .btn-fav-filter.active {
+  border-color: var(--gold); color: var(--gold); background: #fff9e6;
+}
+.detail-fav {
+  background: none;
+  border: 1.5px solid var(--line);
+  color: var(--muted);
+  padding: .3rem .7rem;
+  font-size: .85rem;
+  cursor: pointer;
+}
+.detail-fav.active { border-color: var(--gold); color: var(--gold); background: #fff9e6; }
+
+/* ── Code Form ── */
+.form-view { padding: 1.4rem; }
+.form-view h2 { font-size: 1.1rem; font-weight: 800; color: var(--chocolate); margin-bottom: .9rem; }
+.form-fields { display: flex; flex-direction: column; gap: .65rem; }
+.form-fields > label, .form-row > label {
+  display: flex; flex-direction: column; gap: .18rem;
+  font-size: .83rem; font-weight: 600;
+}
+.form-fields input, .form-fields textarea, .form-fields select {
+  border: 1.5px solid var(--line);
+  background: var(--cream); color: var(--ink);
+  font-family: inherit; font-size: .88rem;
+  padding: .42rem .55rem; outline: none;
+}
+.form-fields input:focus, .form-fields textarea:focus, .form-fields select:focus { border-color: var(--burnt-orange); }
+.form-fields textarea { resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+.usefulness-row { display: flex; align-items: center; gap: .65rem; }
+.usefulness-row input[type=range] { flex: 1; accent-color: var(--burnt-orange); }
+.usefulness-val { font-weight: 700; color: var(--burnt-orange); min-width: 1.2rem; text-align: center; }
+.form-actions { display: flex; gap: .55rem; margin-top: 1.1rem; flex-wrap: wrap; align-items: center; }
+
+/* ── Shared buttons ── */
+.btn-primary {
+  background: var(--burnt-orange); color: #fff;
+  border: 2px solid var(--chocolate);
+  box-shadow: 3px 3px 0 var(--chocolate);
+  padding: .48rem 1.1rem; font-weight: 700; font-size: .88rem; cursor: pointer;
+}
+.btn-primary:hover { box-shadow: 5px 5px 0 var(--burnt-orange); transform: translate(-1px,-1px); }
+.btn-secondary {
+  background: var(--cream); color: var(--chocolate);
+  border: 2px solid var(--chocolate);
+  box-shadow: 3px 3px 0 var(--chocolate);
+  padding: .48rem 1.1rem; font-weight: 700; font-size: .88rem; cursor: pointer;
+}
+.btn-secondary:hover { background: var(--cream-dark); }
+.btn-danger {
+  background: #fff5f5; color: var(--rust);
+  border: 2px solid var(--rust);
+  padding: .48rem .95rem; font-weight: 700; font-size: .88rem; cursor: pointer;
+  margin-left: auto;
+}
+.btn-danger:hover { background: var(--rust); color: #fff; }
+.btn-sm-secondary {
+  background: var(--cream); color: var(--chocolate);
+  border: 1.5px solid var(--chocolate);
+  padding: .28rem .65rem; font-weight: 700; font-size: .8rem; cursor: pointer;
+}
+
 /* ── Header ── */
 header {
-  background: var(--chocolate);
-  color: var(--cream);
-  padding: 1.5rem 2rem;
+  background: var(--chocolate); color: var(--cream);
+  padding: 1.2rem 2rem;
   border-bottom: 3px solid var(--burnt-orange);
 }
-header h1 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin-bottom: 0.15rem;
-}
-header p {
-  font-size: 0.9rem;
-  opacity: 0.7;
-}
+header h1 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .1rem; }
+header p  { font-size: .84rem; opacity: .7; }
+header .disc { font-style: italic; opacity: .5; }
 
 /* ── Controls ── */
 .controls {
   background: var(--cream-dark);
   border-bottom: 2px solid var(--line);
-  padding: 1rem 2rem;
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  padding: .8rem 1.5rem;
+  display: flex; gap: .55rem; flex-wrap: wrap; align-items: center;
+  position: sticky; top: 0; z-index: 10;
 }
-.search-wrap {
-  flex: 1;
-  min-width: 200px;
-  position: relative;
-}
+.search-wrap { flex: 1 1 170px; position: relative; }
 .search-wrap input {
   width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 2rem;
+  padding: .42rem .6rem .42rem 1.75rem;
   border: 2px solid var(--line);
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 0.9rem;
-  outline: none;
+  background: var(--paper); color: var(--ink);
+  font-size: .87rem; outline: none;
 }
 .search-wrap input:focus { border-color: var(--burnt-orange); }
-.search-icon {
-  position: absolute;
-  left: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0.4;
-  font-size: 0.9rem;
-  pointer-events: none;
-}
-select {
-  padding: 0.5rem 0.75rem;
+.search-icon { position: absolute; left: .5rem; top: 50%; transform: translateY(-50%); opacity: .4; pointer-events: none; font-size: .9rem; }
+.controls select {
+  padding: .42rem .55rem;
   border: 2px solid var(--line);
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 0.9rem;
-  cursor: pointer;
-  outline: none;
+  background: var(--paper); color: var(--ink);
+  font-size: .87rem; cursor: pointer; outline: none;
 }
-select:focus { border-color: var(--burnt-orange); }
-.count-label {
-  font-size: 0.85rem;
-  color: var(--muted);
-  white-space: nowrap;
-  margin-left: auto;
-}
+.controls select:focus { border-color: var(--burnt-orange); }
+.count-label { font-size: .8rem; color: var(--muted); white-space: nowrap; margin-left: auto; }
 .count-label strong { color: var(--burnt-orange); }
 
 /* ── Grid ── */
 .grid {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1.5rem 1.5rem 4rem;
+  max-width: 1120px; margin: 0 auto;
+  padding: 1.2rem 1.2rem 5.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.05rem;
 }
 
-/* ── Card ── */
+/* ── Cards ── */
 .card {
   background: var(--paper);
   border: 2px solid var(--chocolate);
   box-shadow: 4px 4px 0 var(--chocolate);
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.1s, transform 0.1s;
+  display: flex; flex-direction: column;
+  cursor: pointer;
+  transition: box-shadow .1s, transform .1s;
 }
-.card:hover {
-  box-shadow: 6px 6px 0 var(--burnt-orange);
-  transform: translate(-1px, -1px);
-}
+.card:hover { box-shadow: 6px 6px 0 var(--burnt-orange); transform: translate(-1px,-1px); }
 .card-top {
-  padding: 0.9rem 1rem 0.7rem;
+  padding: .65rem .85rem;
   border-bottom: 1.5px solid var(--line);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.5rem;
+  display: flex; justify-content: space-between; align-items: center; gap: .4rem;
 }
+.card-top-left  { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
+.card-top-right { display: flex; align-items: center; gap: .25rem; }
 .jurisdiction {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.15rem 0.45rem;
-  border: 1.5px solid currentColor;
+  font-size: .67rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: .1rem .38rem; border: 1.5px solid currentColor;
 }
-.jurisdiction.state  { color: var(--blue); }
-.jurisdiction.county { color: var(--green); }
-.jurisdiction.city   { color: var(--choc-mid); }
-.jurisdiction.federal{ color: var(--rust); }
-.stars { color: var(--gold); font-size: 0.95rem; white-space: nowrap; }
+.jurisdiction.state   { color: var(--blue); }
+.jurisdiction.county  { color: var(--green); }
+.jurisdiction.city    { color: var(--choc-mid); }
+.jurisdiction.federal { color: var(--rust); }
+.custom-badge {
+  font-size: .63rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: .08rem .32rem;
+  background: var(--choc-mid); color: var(--cream);
+}
+.stars { color: var(--gold); font-size: .88rem; white-space: nowrap; }
+.note-dot { font-size: .78rem; }
 
-.card-body { padding: 0.85rem 1rem; flex: 1; }
-.code-ref {
-  font-size: 0.8rem;
-  font-family: monospace;
-  color: var(--muted);
-  margin-bottom: 0.3rem;
-}
-.card-title {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--chocolate);
-  margin-bottom: 0.35rem;
-  line-height: 1.3;
-}
+.card-body { padding: .75rem .85rem; flex: 1; }
+.code-ref  { font-size: .73rem; font-family: monospace; color: var(--muted); margin-bottom: .18rem; }
+.card-title { font-weight: 700; font-size: .95rem; color: var(--chocolate); margin-bottom: .28rem; line-height: 1.3; }
 .cat-tag {
   display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.1rem 0.4rem;
-  margin-bottom: 0.6rem;
-  border-radius: 2px;
+  font-size: .67rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em;
+  padding: .09rem .36rem; margin-bottom: .45rem; border-radius: 2px;
 }
-.cat-owner-builder  { background: #fef3c7; color: #92400e; }
-.cat-adu            { background: #d1fae5; color: #065f46; }
-.cat-permit-exempt  { background: #e0f2fe; color: #075985; }
-.cat-ag-rights      { background: #f0fdf4; color: #166534; }
-.cat-grandfathering { background: #f5f3ff; color: #5b21b6; }
-.cat-off-grid       { background: #fff7ed; color: #c2410c; }
-.cat-variance       { background: #fdf2f8; color: #9d174d; }
-.cat-tax-homestead  { background: #f0f9ff; color: #0c4a6e; }
-.cat-right-to-farm  { background: #f7fee7; color: #3f6212; }
-.cat-water-rights   { background: #ecfeff; color: #164e63; }
+.cat-owner-builder   { background: #fef3c7; color: #92400e; }
+.cat-adu             { background: #d1fae5; color: #065f46; }
+.cat-permit-exempt   { background: #e0f2fe; color: #075985; }
+.cat-ag-rights       { background: #f0fdf4; color: #166534; }
+.cat-grandfathering  { background: #f5f3ff; color: #5b21b6; }
+.cat-off-grid        { background: #fff7ed; color: #c2410c; }
+.cat-variance        { background: #fdf2f8; color: #9d174d; }
+.cat-tax-homestead   { background: #f0f9ff; color: #0c4a6e; }
+.cat-right-to-farm   { background: #f7fee7; color: #3f6212; }
+.cat-water-rights    { background: #ecfeff; color: #164e63; }
+.cat-neighbor-rights { background: #fef9ee; color: #78350f; }
 
 .description {
-  font-size: 0.9rem;
-  color: var(--ink);
-  margin-bottom: 0.5rem;
+  font-size: .87rem; color: var(--ink); margin-bottom: .35rem;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .conditions {
-  font-size: 0.82rem;
-  color: var(--muted);
-  border-left: 2.5px solid var(--line);
-  padding-left: 0.6rem;
-  margin-bottom: 0.5rem;
+  font-size: .79rem; color: var(--muted);
+  border-left: 2px solid var(--line); padding-left: .48rem;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.conditions strong { color: var(--rust); font-size: 0.78rem; display: block; margin-bottom: 0.1rem; }
-
 .card-foot {
-  padding: 0.6rem 1rem;
+  padding: .48rem .85rem;
   border-top: 1.5px solid var(--line);
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  align-items: center;
+  display: flex; gap: .38rem; flex-wrap: wrap; align-items: center;
 }
 .tag-pill {
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  background: var(--cream-dark);
-  color: var(--muted);
-  border: 1px solid var(--line);
-  cursor: pointer;
+  font-size: .67rem; padding: .08rem .36rem;
+  background: var(--cream-dark); color: var(--muted);
+  border: 1px solid var(--line); cursor: pointer;
 }
 .tag-pill:hover { background: var(--line); color: var(--ink); }
-.source-link {
-  margin-left: auto;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--burnt-orange);
-  text-decoration: none;
-  border-bottom: 1.5px solid transparent;
-  white-space: nowrap;
-}
-.source-link:hover { border-color: var(--burnt-orange); }
 
-/* ── Empty state ── */
-.empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--muted);
-}
-.empty h2 { font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--chocolate); }
+/* ── Empty ── */
+.empty { grid-column: 1/-1; text-align: center; padding: 4rem 2rem; color: var(--muted); }
+.empty h2 { font-size: 1.1rem; margin-bottom: .4rem; color: var(--chocolate); }
 
-/* ── Submit banner ── */
-.submit-banner {
-  background: var(--chocolate);
-  color: var(--cream);
-  text-align: center;
-  padding: 0.7rem;
-  font-size: 0.85rem;
-  position: fixed;
-  bottom: 0;
-  left: 0; right: 0;
+/* ── Footer banner ── */
+.banner {
+  background: var(--chocolate); color: var(--cream);
+  padding: .55rem 1.5rem;
+  position: fixed; bottom: 0; left: 0; right: 0;
   border-top: 2px solid var(--burnt-orange);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  z-index: 20;
 }
-.submit-banner a {
-  color: var(--burnt-orange);
-  font-weight: 700;
-  text-decoration: none;
+.banner-disc { font-size: .76rem; opacity: .55; font-style: italic; }
+.banner-btns { display: flex; gap: .45rem; align-items: center; flex-wrap: wrap; }
+.banner-btn {
+  background: none;
+  border: 1.5px solid rgba(245,240,230,.38);
+  color: var(--cream);
+  padding: .28rem .7rem;
+  font-size: .8rem; font-weight: 600; cursor: pointer;
+}
+.banner-btn:hover { background: rgba(255,255,255,.1); border-color: var(--cream); }
+
+/* Export dropdown */
+.export-wrap { position: relative; }
+.export-drop {
+  display: none;
+  position: absolute; bottom: calc(100% + 5px); right: 0;
+  background: var(--paper);
+  border: 2px solid var(--chocolate);
+  box-shadow: 4px 4px 0 var(--chocolate);
+  min-width: 155px; z-index: 30;
+}
+.export-drop.open { display: block; }
+.export-drop button {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none;
+  border-bottom: 1px solid var(--line);
+  padding: .45rem .8rem;
+  font-size: .84rem; color: var(--ink); cursor: pointer;
+}
+.export-drop button:last-child { border-bottom: none; }
+.export-drop button:hover { background: var(--cream-dark); }
+
+/* ── Print ── */
+@media print {
+  .controls, .banner, .overlay { display: none !important; }
+  .grid { padding: 0; display: block; }
+  .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; margin-bottom: .7rem; cursor: default; }
+  .card:hover { transform: none; box-shadow: none; }
+  .description, .conditions { display: block; -webkit-line-clamp: unset; overflow: visible; }
+  body { background: #fff; }
+  header { border-bottom: 2px solid #000; }
 }
 </style>
 </head>
 <body>
 
+<!-- ── Modal overlay ── -->
+<div id="overlay" class="overlay hidden" onclick="closeModal()">
+  <div id="modal" class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()" title="Close (Esc)">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ── Header ── -->
 <header>
   <h1>Municipal Code Finder</h1>
-  <p>Legal provisions that give property owners more rights, fewer restrictions, and more control over their land.</p>
+  <p>Legal provisions that give property owners more rights, fewer restrictions, and control over their land. <span class="disc">Informational only — not legal advice.</span></p>
 </header>
 
+<!-- ── Controls ── -->
 <div class="controls">
   <div class="search-wrap">
-    <span class="search-icon">&#128269;</span>
-    <input type="text" id="search" placeholder="Search codes, descriptions, tags..." oninput="render()">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search codes, descriptions, tags…" oninput="onFilterChange()">
   </div>
-  <select id="stateFilter" onchange="render()">
+  <select id="stateFilter" onchange="onFilterChange()">
     <option value="">All States</option>
   </select>
-  <select id="catFilter" onchange="render()">
+  <select id="levelFilter" onchange="onFilterChange()">
+    <option value="">All Levels</option>
+    <option value="state">State Law</option>
+    <option value="county">County</option>
+    <option value="city">City</option>
+    <option value="federal">Federal</option>
+  </select>
+  <select id="catFilter" onchange="onFilterChange()">
     <option value="">All Categories</option>
   </select>
-  <select id="sortBy" onchange="render()">
-    <option value="usefulness">Sort: Most Useful</option>
-    <option value="alpha">Sort: A–Z</option>
-    <option value="state">Sort: State</option>
+  <select id="sortBy" onchange="onFilterChange()">
+    <option value="usefulness">Most Useful</option>
+    <option value="alpha">A–Z</option>
+    <option value="state">By State</option>
   </select>
+  <button id="favBtn" class="btn-fav-filter" onclick="toggleFavFilter()">☆ Favorites</button>
   <div class="count-label"><strong id="countNum">0</strong> codes</div>
 </div>
 
+<!-- ── Grid ── -->
 <div class="grid" id="grid"></div>
 
-<div class="submit-banner">
-  Know a code that should be here?
-  <a href="javascript:void(0)" onclick="addCodePrompt()">+ Add it</a>
-  &nbsp;|&nbsp;
-  Data saved locally in your browser.
-  <a href="javascript:void(0)" onclick="exportData()">Export JSON</a>
+<!-- ── Footer ── -->
+<div class="banner">
+  <span class="banner-disc">Not legal advice — verify all codes with official sources and a licensed attorney.</span>
+  <span class="banner-btns">
+    <button class="banner-btn" onclick="openCodeForm('add')">+ Add Code</button>
+    <div class="export-wrap">
+      <button class="banner-btn" id="exportToggle" onclick="toggleExportDrop()">Export ▾</button>
+      <div class="export-drop" id="exportDrop">
+        <button onclick="exportData('all')">All Codes</button>
+        <button onclick="exportData('custom')">Custom Only</button>
+        <button onclick="exportData('favorites')">Favorites Only</button>
+      </div>
+    </div>
+    <button class="banner-btn" onclick="triggerImport()">Import JSON</button>
+    <button class="banner-btn" onclick="window.print()">🖨 Print / PDF</button>
+  </span>
 </div>
 
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+
 <script>
-// ── Dataset ──────────────────────────────────────────────────────────────────
+// ── HTML escape ───────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Dataset ───────────────────────────────────────────────────────────────────
 const BUILTIN = [
+  // ── Owner-Builder ──
   {
-    id: "ca-bpc-7044",
-    state: "California",
-    level: "state",
-    reference: "Business & Professions Code § 7044",
-    category: "owner-builder",
-    title: "Owner-Builder License Exemption",
-    description: "Property owners can pull their own building permits and act as their own general contractor — no licensed contractor required — as long as they intend to occupy the structure.",
-    conditions: "Must intend to occupy for at least 1 year after completion. Applies to single-family residences and structures under the owner's supervision.",
-    usefulness: 5,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=7044.&lawCode=BPC",
-    tags: ["no-contractor", "self-build", "permits", "residential"]
+    id:'ca-bpc-7044', state:'California', level:'state',
+    reference:'Business & Professions Code § 7044',
+    category:'owner-builder', usefulness:5,
+    title:'Owner-Builder License Exemption',
+    description:'Property owners can pull their own building permits and act as their own general contractor — no licensed contractor required — as long as they intend to occupy the structure.',
+    conditions:'Must intend to occupy for at least 1 year after completion. Applies to single-family residences and structures under the owner\'s supervision.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=7044.&lawCode=BPC',
+    tags:['no-contractor','self-build','permits','residential']
   },
   {
-    id: "ca-hsc-17922",
-    state: "California",
-    level: "state",
-    reference: "Health & Safety Code § 17958.10–17958.12",
-    category: "owner-builder",
-    title: "HCD Title 25 — Owner-Built Rural Dwellings",
-    description: "Allows counties to adopt alternative building standards for limited-density, owner-built rural dwellings. These relaxed codes let people build their own homes in rural areas using simpler methods and materials.",
-    conditions: "Must be in a qualifying rural county. County must have adopted Title 25 locally. Structure must be owner-occupied.",
-    usefulness: 5,
-    url: "https://www.hcd.ca.gov/building-standards/title-25",
-    tags: ["rural", "owner-built", "alternative-standards", "HCD", "Title 25"]
+    id:'ca-hsc-17922', state:'California', level:'state',
+    reference:'Health & Safety Code § 17958.10–17958.12',
+    category:'owner-builder', usefulness:5,
+    title:'HCD Title 25 — Owner-Built Rural Dwellings',
+    description:'Allows counties to adopt alternative building standards for limited-density, owner-built rural dwellings. These relaxed codes let people build their own homes in rural areas using simpler methods and materials.',
+    conditions:'Must be in a qualifying rural county. County must have adopted Title 25 locally. Structure must be owner-occupied.',
+    url:'https://www.hcd.ca.gov/building-standards/title-25',
+    tags:['rural','owner-built','alternative-standards','HCD','Title 25']
   },
   {
-    id: "butte-co-ch26-art6",
-    state: "California",
-    level: "county",
-    reference: "Butte County Code, Ch. 26 Art. VI",
-    category: "owner-builder",
-    title: "Butte County — Limited Density Owner-Built Rural Dwellings",
-    description: "Butte County's local adoption of California Title 25. Allows rural property owners to build their own primary residence using owner-builder standards — simpler inspections, alternative materials, and no contractor license required.",
-    conditions: "Parcel must be in a rural/agricultural zone. Owner must do the majority of the work themselves and intend to occupy.",
-    usefulness: 5,
-    url: "https://library.municode.com/ca/butte_county/codes/code_of_ordinances?nodeId=CH26BU_ARTVIRELIDEOWILRUDW",
-    tags: ["Butte County", "Title 25", "rural", "owner-built", "Northern California"]
+    id:'butte-co-ch26-art6', state:'California', level:'county',
+    reference:'Butte County Code, Ch. 26 Art. VI',
+    category:'owner-builder', usefulness:5,
+    title:'Butte County — Limited Density Owner-Built Rural Dwellings',
+    description:'Butte County\'s local adoption of California Title 25. Allows rural property owners to build their own primary residence using owner-builder standards — simpler inspections, alternative materials, and no contractor license required.',
+    conditions:'Parcel must be in a rural/agricultural zone. Owner must do the majority of the work themselves and intend to occupy.',
+    url:'https://library.municode.com/ca/butte_county/codes/code_of_ordinances?nodeId=CH26BU_ARTVIRELIDEOWILRUDW',
+    tags:['Butte County','Title 25','rural','owner-built','Northern California']
   },
   {
-    id: "ca-gov-65852",
-    state: "California",
-    level: "state",
-    reference: "Government Code § 65852.2",
-    category: "adu",
-    title: "ADU Reform — Statewide Right to Build ADUs",
-    description: "Every single-family and multi-family lot in California has a right to at least one Accessory Dwelling Unit. Cities and counties cannot deny ADUs that meet objective standards. Dramatically expanded by AB 68, SB 13, and AB 881 (2020).",
-    conditions: "ADU must meet ministerial (objective) standards for size, setbacks, and height. Owner-occupancy requirements largely eliminated statewide since 2020.",
-    usefulness: 5,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65852.2.&lawCode=GOV",
-    tags: ["ADU", "rental income", "housing", "statewide right", "granny flat", "backyard cottage"]
+    id:'ca-hsc-18551-rv', state:'California', level:'state',
+    reference:'Health & Safety Code § 18551',
+    category:'owner-builder', usefulness:4,
+    title:'RV / Trailer as Temporary Dwelling During Construction',
+    description:'While building a new residence on your own property, you may live in a mobilehome, manufactured home, or RV/trailer on-site as a temporary dwelling for up to 1 year (extendable by the county). Eliminates the need to pay rent elsewhere during construction.',
+    conditions:'Must be actively building a permanent structure. Temporary dwelling permit typically required from county. Some counties limit to the construction period only. Check local ordinances.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=18551.&lawCode=HSC',
+    tags:['RV','trailer','temporary dwelling','live on land','construction','owner-builder']
   },
   {
-    id: "ca-gov-65852-jadu",
-    state: "California",
-    level: "state",
-    reference: "Government Code § 65852.22",
-    category: "adu",
-    title: "Junior ADU (JADU) — Convert Existing Space",
-    description: "Allows conversion of up to 500 sq ft of existing space within a single-family home into a separate dwelling unit with its own entrance. Cannot be denied if standards are met. No new parking required.",
-    conditions: "Must be within the existing footprint of the house. Owner must occupy either the main home or the JADU. Shared bathroom with main dwelling allowed.",
-    usefulness: 4,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65852.22.&lawCode=GOV",
-    tags: ["JADU", "ADU", "in-law suite", "conversion", "no parking"]
+    id:'ca-hsc-18551-manufactured', state:'California', level:'state',
+    reference:'Health & Safety Code § 18551',
+    category:'owner-builder', usefulness:4,
+    title:'Manufactured Home as Permanent Residence',
+    description:'Manufactured homes can be placed on private land as a permanent residential structure and treated equivalently to site-built homes for most purposes. Avoids the cost of traditional stick-built construction.',
+    conditions:'Must meet HUD Manufactured Housing Construction standards. Must be installed on a permanent foundation per local requirements. Zoning must allow residential use.',
+    url:'https://www.hcd.ca.gov/manufactured-mobile-home/title-25',
+    tags:['manufactured home','mobile home','modular','permanent residence','alternative housing']
+  },
+  // ── ADU ──
+  {
+    id:'ca-gov-65852', state:'California', level:'state',
+    reference:'Government Code § 65852.2',
+    category:'adu', usefulness:5,
+    title:'ADU Reform — Statewide Right to Build ADUs',
+    description:'Every single-family and multi-family lot in California has a right to at least one Accessory Dwelling Unit. Cities and counties cannot deny ADUs that meet objective standards. Dramatically expanded by AB 68, SB 13, and AB 881 (2020).',
+    conditions:'ADU must meet ministerial (objective) standards for size, setbacks, and height. Owner-occupancy requirements largely eliminated statewide since 2020.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65852.2.&lawCode=GOV',
+    tags:['ADU','rental income','housing','statewide right','granny flat','backyard cottage']
   },
   {
-    id: "ca-gov-65913-sb9",
-    state: "California",
-    level: "state",
-    reference: "Government Code § 65852.21 / SB 9 (2022)",
-    category: "adu",
-    title: "SB 9 — Urban Lot Split & Duplex Right",
-    description: "Allows property owners in single-family zones to split their lot into two parcels and/or build a duplex on each — up to 4 units on what was previously a single-family lot. Cities cannot deny if objective standards are met.",
-    conditions: "Urban infill areas only (not rural/agricultural). Owner must occupy one unit for 3 years. Lot must be at least 1,200 sq ft after split. Historic/fire hazard zones may be excluded.",
-    usefulness: 4,
-    url: "https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220SB9",
-    tags: ["lot split", "duplex", "4 units", "SB 9", "urban", "housing density"]
+    id:'ca-gov-65852-jadu', state:'California', level:'state',
+    reference:'Government Code § 65852.22',
+    category:'adu', usefulness:4,
+    title:'Junior ADU (JADU) — Convert Existing Space',
+    description:'Allows conversion of up to 500 sq ft of existing space within a single-family home into a separate dwelling unit with its own entrance. Cannot be denied if standards are met. No new parking required.',
+    conditions:'Must be within the existing footprint of the house. Owner must occupy either the main home or the JADU. Shared bathroom with main dwelling allowed.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65852.22.&lawCode=GOV',
+    tags:['JADU','ADU','in-law suite','conversion','no parking']
   },
   {
-    id: "ca-civil-3482",
-    state: "California",
-    level: "state",
-    reference: "Civil Code § 3482.5",
-    category: "right-to-farm",
-    title: "Right to Farm Act",
-    description: "Agricultural operations that have been established for more than 3 years cannot be declared a nuisance due to changed conditions in the surrounding area (e.g., new neighbors moving in near a farm). Protects existing farm operations from nuisance lawsuits.",
-    conditions: "Farm must have been in operation for at least 3 continuous years. Operation must comply with applicable laws. Does not protect against negligent operations.",
-    usefulness: 4,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=3482.5.&lawCode=CIV",
-    tags: ["farming", "nuisance", "agricultural", "protection", "right to farm"]
+    id:'ca-gov-65913-sb9', state:'California', level:'state',
+    reference:'Government Code § 65852.21 / SB 9 (2022)',
+    category:'adu', usefulness:4,
+    title:'SB 9 — Urban Lot Split & Duplex Right',
+    description:'Allows property owners in single-family zones to split their lot into two parcels and/or build a duplex on each — up to 4 units on what was previously a single-family lot. Cities cannot deny if objective standards are met.',
+    conditions:'Urban infill areas only (not rural/agricultural). Owner must occupy one unit for 3 years. Lot must be at least 1,200 sq ft after split. Historic/fire hazard zones may be excluded.',
+    url:'https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220SB9',
+    tags:['lot split','duplex','4 units','SB 9','urban','housing density']
   },
   {
-    id: "ca-hsc-17922-ag-exempt",
-    state: "California",
-    level: "state",
-    reference: "Health & Safety Code § 17922 / CBC § 101.2",
-    category: "permit-exempt",
-    title: "Agricultural Building Permit Exemption",
-    description: "Structures used exclusively for agriculture on farms of 40+ acres are generally exempt from state building code requirements and permit requirements under the California Building Code. Includes barns, equipment storage, and crop storage.",
-    conditions: "Must be used exclusively for agricultural purposes. Many rural counties have adopted similar or broader exemptions. Check local county ordinances — some are more generous.",
-    usefulness: 4,
-    url: "https://codes.iccsafe.org/content/CBC2022P1/chapter-1-scope-and-administration",
-    tags: ["ag exempt", "barn", "farm buildings", "no permit", "rural", "40 acres"]
+    id:'ca-gov-65863-no-parking', state:'California', level:'state',
+    reference:'Government Code § 65863.2 (AB 2097, 2022)',
+    category:'adu', usefulness:3,
+    title:'No Minimum Parking Near Transit',
+    description:'For any residential or commercial project within 0.5 miles of a major transit stop, cities and counties cannot impose minimum parking requirements. Removes a common barrier to ADU and infill development near transit.',
+    conditions:'Applies to projects within 0.5 miles of a high-quality transit corridor or major transit stop. The property must not be in a special parking district with voter-approved requirements.',
+    url:'https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202120220AB2097',
+    tags:['no parking','transit','ADU','infill','AB 2097','parking minimum']
   },
   {
-    id: "ca-rev-tax-218",
-    state: "California",
-    level: "state",
-    reference: "Revenue & Taxation Code § 218",
-    category: "tax-homestead",
-    title: "Homeowner's Property Tax Exemption",
-    description: "Owner-occupied residential properties receive a $7,000 reduction in assessed value for property tax purposes — reduces annual tax bill by roughly $70/year at 1% rate. Simple to claim, automatic renewal.",
-    conditions: "Must be owner-occupied as of January 1. Must file a claim with the county assessor. Not applicable to vacation homes or investment properties.",
-    usefulness: 3,
-    url: "https://www.boe.ca.gov/proptaxes/exemptions/homeowners.htm",
-    tags: ["property tax", "homeowner exemption", "homestead", "tax reduction"]
+    id:'ca-govt-65915-density-bonus', state:'California', level:'state',
+    reference:'Government Code § 65915',
+    category:'adu', usefulness:3,
+    title:'Density Bonus Law',
+    description:'Property owners and developers who include affordable units get a state-mandated bonus of additional market-rate units (up to 50% more than base zoning allows), plus waivers and incentives, as a matter of right.',
+    conditions:'Requires at least 5% affordable at very-low income, or 10% at lower income, or 10% moderate-income condos. Cities cannot deny if objective standards are met.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65915.&lawCode=GOV',
+    tags:['density bonus','affordable housing','extra units','development','by-right']
+  },
+  // ── Permit Exempt ──
+  {
+    id:'ca-cbc-1052-permit-exempt', state:'California', level:'state',
+    reference:'California Building Code § 105.2.1',
+    category:'permit-exempt', usefulness:5,
+    title:'Permit-Exempt Structures — Sheds, Fences, Retaining Walls',
+    description:'Many common structures do not require a building permit in California: detached one-story tool/storage sheds under 120 sq ft, fences under 7 ft tall, retaining walls under 4 ft (measured from bottom of footing), and decks under 30 in. above grade.',
+    conditions:'Still must comply with zoning setbacks and HOA rules. Does not override fire-hazard zone requirements. Some counties have stricter thresholds — always check local ordinances.',
+    url:'https://www.hcd.ca.gov/building-standards',
+    tags:['no permit','shed','fence','retaining wall','deck','120 sq ft','small structure']
   },
   {
-    id: "ca-rev-tax-434",
-    state: "California",
-    level: "state",
-    reference: "Revenue & Taxation Code § 434",
-    category: "tax-homestead",
-    title: "Williamson Act — Agricultural Land Tax Reduction",
-    description: "Landowners who enter into a Williamson Act contract agree to keep land agricultural for 10+ years in exchange for property taxes assessed at agricultural use value (often 20–75% lower than market value).",
-    conditions: "Minimum parcel size (varies by county, typically 10–100 acres). Must keep land in agricultural use for contract term (10 years, auto-renews). Withdrawal triggers penalty taxes.",
-    usefulness: 4,
-    url: "https://www.conservation.ca.gov/dlrp/lca",
-    tags: ["Williamson Act", "ag land", "tax reduction", "farmland preservation", "10 year contract"]
+    id:'ca-hsc-17922-ag-exempt', state:'California', level:'state',
+    reference:'Health & Safety Code § 17922 / CBC § 101.2',
+    category:'permit-exempt', usefulness:4,
+    title:'Agricultural Building Permit Exemption',
+    description:'Structures used exclusively for agriculture on farms are generally exempt from state building code requirements and permit requirements under the California Building Code. Includes barns, equipment storage, and crop storage.',
+    conditions:'Must be used exclusively for agricultural purposes. Many rural counties have adopted similar or broader exemptions. Check local county ordinances — some are more generous.',
+    url:'https://codes.iccsafe.org/content/CBC2022P1/chapter-1-scope-and-administration',
+    tags:['ag exempt','barn','farm buildings','no permit','rural','agricultural']
   },
   {
-    id: "ca-prop13",
-    state: "California",
-    level: "state",
-    reference: "California Constitution Art. XIII A (Prop 13)",
-    category: "tax-homestead",
-    title: "Proposition 13 — Property Tax Assessment Cap",
-    description: "Limits property tax to 1% of assessed value at time of purchase, with annual increases capped at 2%. Long-term owners pay far below market-rate taxes. Also protects against sudden reassessment due to improvements in many cases.",
-    conditions: "Triggers reassessment on sale or transfer. Parent-to-child and grandparent-to-grandchild transfers may be excluded from reassessment under Props 58/193 (now limited by Prop 19).",
-    usefulness: 5,
-    url: "https://www.boe.ca.gov/proptaxes/prop13.htm",
-    tags: ["Prop 13", "tax cap", "assessed value", "2% cap", "California landmark"]
+    id:'ca-coastal-act-dp', state:'California', level:'state',
+    reference:'Public Resources Code § 30610',
+    category:'permit-exempt', usefulness:3,
+    title:'Coastal Act — Interior Remodel Permit Exemption',
+    description:'Interior remodels that don\'t change the use, density, or intensity of a coastal structure are exempt from Coastal Development Permits. Significant savings on time and fees for coastal property owners doing interior work.',
+    conditions:'Must not change use or density. Exterior changes may still require a CDP. Applies in California Coastal Zone. Some local Coastal Programs have stricter rules.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=30610.&lawCode=PRC',
+    tags:['coastal','coastal permit','interior remodel','permit exemption','coastal zone']
+  },
+  // ── Agricultural Rights ──
+  {
+    id:'ca-civil-3482', state:'California', level:'state',
+    reference:'Civil Code § 3482',
+    category:'ag-rights', usefulness:3,
+    title:'Agricultural Operations — Noise & Odor Nuisance Exemption',
+    description:'Sounds, odors, dust, and other conditions resulting from agricultural operations that comply with applicable law cannot be declared nuisances. Protects farm operations from complaints about inherent agricultural activities.',
+    conditions:'Operation must comply with all applicable laws. Does not protect negligent or unlawful practices. Related to Right to Farm Act (Civil Code § 3482.5).',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=3482.&lawCode=CIV',
+    tags:['farming','nuisance','noise','odor','agricultural exemption','right to farm']
   },
   {
-    id: "ca-water-riparian",
-    state: "California",
-    level: "state",
-    reference: "California Water Code / Riparian Rights Doctrine",
-    category: "water-rights",
-    title: "Riparian Water Rights",
-    description: "Landowners adjacent to a natural watercourse have the right to use a reasonable share of the water for beneficial use on their land. These rights are tied to the land and transfer with ownership.",
-    conditions: "Land must be contiguous to and dependent on the watercourse. Use must be reasonable and beneficial. Does not include the right to store or divert large amounts. Check for any existing senior appropriative rights.",
-    usefulness: 3,
-    url: "https://water.ca.gov/Programs/Water-Use-And-Efficiency/Water-Rights",
-    tags: ["water rights", "riparian", "stream", "water access", "beneficial use"]
+    id:'ca-hsc-114365-cottage-food', state:'California', level:'state',
+    reference:'Health & Safety Code § 114365',
+    category:'ag-rights', usefulness:3,
+    title:'Cottage Food Law — Sell Homemade Food from Your Home',
+    description:'Allows you to produce and sell approved non-potentially-hazardous foods (jams, baked goods, candy, etc.) directly to consumers from your home kitchen without a commercial kitchen license. Class B allows indirect sales up to $75,000/year.',
+    conditions:'Class A: direct sales only, up to $75,000/year. Class B: direct + indirect (farmers markets, restaurants), up to $75,000/year. Food must be on the approved list. Annual registration with county required.',
+    url:'https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/CottageFoodOperations/CottageFoodGuideEnglish.pdf',
+    tags:['cottage food','home kitchen','sell food','home business','food production','jam','baked goods']
   },
   {
-    id: "ca-hsc-13869-rainwater",
-    state: "California",
-    level: "state",
-    reference: "Water Code § 10573 / AB 1750 (2012)",
-    category: "off-grid",
-    title: "Rainwater Harvesting — Legal in California",
-    description: "California explicitly allows residential rainwater harvesting. Single-family homes may collect and use rainwater for outdoor irrigation and (with treatment) indoor non-potable uses without a water right permit.",
-    conditions: "Residential use only at point of collection. Must comply with local health codes for indoor non-potable use. Commercial-scale collection still requires water right.",
-    usefulness: 3,
-    url: "https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=201120120AB1750",
-    tags: ["rainwater", "water harvesting", "off-grid", "cistern", "water independence"]
+    id:'us-fed-cwa-ag-exempt', state:'Federal', level:'federal',
+    reference:'33 U.S.C. § 1344(f) — Clean Water Act',
+    category:'ag-rights', usefulness:3,
+    title:'CWA Agricultural Exemption from Wetlands Permitting',
+    description:'Normal farming, silviculture, and ranching activities (plowing, seeding, cultivating, harvesting, and minor drainage) are exempt from Army Corps of Engineers Section 404 permits for fill of wetlands. Applies on established farmlands.',
+    conditions:'Applies to established (not newly converted) farmland. Activity must be part of a normal farming operation. Converting wetlands to new agricultural use is NOT exempt. Consult legal counsel for edge cases.',
+    url:'https://www.epa.gov/cwa-404/agricultural-exemptions-under-section-404',
+    tags:['CWA','wetlands','farming','agricultural exemption','federal','Army Corps','no permit']
+  },
+  // ── Right to Farm ──
+  {
+    id:'ca-civil-3482-rtf', state:'California', level:'state',
+    reference:'Civil Code § 3482.5',
+    category:'right-to-farm', usefulness:4,
+    title:'Right to Farm Act',
+    description:'Agricultural operations established for more than 3 years cannot be declared a nuisance due to changed conditions in the surrounding area — e.g., new neighbors moving next to an existing farm. Protects farms from nuisance lawsuits driven by suburban encroachment.',
+    conditions:'Farm must have been in operation for at least 3 continuous years. Operation must comply with applicable laws. Does not protect against negligent operations.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=3482.5.&lawCode=CIV',
+    tags:['farming','nuisance','agricultural','protection','right to farm','3 years']
+  },
+  // ── Grandfathering ──
+  {
+    id:'ca-nonconforming', state:'California', level:'state',
+    reference:'Government Code § 65852.25 / Local Zoning Law',
+    category:'grandfathering', usefulness:4,
+    title:'Legal Nonconforming Use Protection',
+    description:'Structures and uses lawfully established before a zoning code change are generally allowed to continue ("grandfathered"), even if they don\'t conform to current code. Protects owners from sudden loss of use rights when zoning changes around them.',
+    conditions:'Use must have been legal when established. Cannot expand the nonconforming use. If destroyed, may lose nonconforming status (check local % rule). Specific rules vary significantly by jurisdiction.',
+    url:'https://www.hcd.ca.gov/policy-research/docs/adu_nonconforming.pdf',
+    tags:['grandfathered','nonconforming','zoning','existing structures','pre-existing use']
   },
   {
-    id: "ca-gov-65402-solar",
-    state: "California",
-    level: "state",
-    reference: "Government Code § 65850.5 / Solar Rights Act",
-    category: "off-grid",
-    title: "Solar Rights Act — HOA Cannot Ban Solar",
-    description: "HOAs and CC&Rs cannot prohibit or unreasonably restrict the installation of solar energy systems. Any restriction that increases cost by more than $1,000 or decreases efficiency by more than 10% is unenforceable.",
-    conditions: "Applies to solar panels and solar water heaters. HOAs may impose reasonable aesthetic restrictions (panel placement, color) but cannot prohibit outright.",
-    usefulness: 4,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65850.5.&lawCode=GOV",
-    tags: ["solar", "HOA", "renewable energy", "solar rights", "panels", "unenforceable restriction"]
+    id:'ca-gov-65402-disaster-rebuild', state:'California', level:'state',
+    reference:'Government Code § 65402.5',
+    category:'grandfathering', usefulness:4,
+    title:'Right to Rebuild After Natural Disaster',
+    description:'Property damaged or destroyed by a natural disaster (fire, flood, earthquake) can be rebuilt to its pre-disaster footprint, size, and use — even if that structure no longer conforms to current zoning or building codes. Cities and counties cannot deny a conforming rebuild.',
+    conditions:'Must apply to rebuild within a set timeframe (varies by jurisdiction, often 4–5 years). Rebuild must substantially conform to prior structure. Some counties require ministerial approval. Verify local rules.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65402.5.&lawCode=GOV',
+    tags:['disaster','fire','flood','rebuild','nonconforming','restore','right to rebuild']
   },
   {
-    id: "ca-nonconforming",
-    state: "California",
-    level: "state",
-    reference: "Government Code § 65852.25 / Local Zoning Law",
-    category: "grandfathering",
-    title: "Legal Nonconforming Use Protection",
-    description: "Structures and uses that were lawfully established before a zoning code change are generally allowed to continue ('grandfathered'), even if they don't conform to current code. This protects owners from sudden loss of use rights.",
-    conditions: "Use must have been legal when established. Cannot expand the nonconforming use. If destroyed, may lose nonconforming status (check local % rule). Specific rules vary significantly by jurisdiction.",
-    usefulness: 4,
-    url: "https://www.hcd.ca.gov/policy-research/docs/adu_nonconforming.pdf",
-    tags: ["grandfathered", "nonconforming", "zoning", "existing structures", "pre-existing use"]
+    id:'ca-civ-adverse-possession', state:'California', level:'state',
+    reference:'Code of Civil Procedure § 318–325',
+    category:'grandfathering', usefulness:2,
+    title:'Adverse Possession',
+    description:'Property openly, continuously, exclusively, and hostilely occupied and maintained (including paying property taxes) for 5 years can be claimed through a court quiet-title action.',
+    conditions:'Must occupy for 5 continuous years, pay all property taxes, and have color of title or claim of right. Must file a quiet title action. Difficult to succeed — legal counsel strongly recommended.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=318.&lawCode=CCP',
+    tags:['adverse possession','squatter\'s rights','5 years','quiet title','property claim']
   },
   {
-    id: "ca-coastal-act-dp",
-    state: "California",
-    level: "state",
-    reference: "Public Resources Code § 30610",
-    category: "permit-exempt",
-    title: "Coastal Act — Interior Remodel Permit Exemption",
-    description: "Interior remodels that don't change the use, density, or intensity of a coastal structure are exempt from Coastal Development Permits. Significant savings on time and fees for coastal property owners doing interior work.",
-    conditions: "Must not change use or density. Exterior changes may still require a CDP. Applies in California Coastal Zone. Some local Coastal Programs have stricter rules.",
-    usefulness: 3,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=30610.&lawCode=PRC",
-    tags: ["coastal", "coastal permit", "interior remodel", "permit exemption", "coastal zone"]
+    id:'ca-civ-887-prescriptive-easement', state:'California', level:'state',
+    reference:'Civil Code § 1007 / Case Law',
+    category:'grandfathering', usefulness:2,
+    title:'Prescriptive Easement Rights',
+    description:'If you (or prior owners) have openly, continuously, and adversely used a portion of a neighbor\'s property for 5+ years, you may have acquired a legal right to continue that use (e.g., a driveway, path, or water access).',
+    conditions:'Use must be open, notorious, hostile, and continuous for 5 years. Must file a court action to formalize. Cannot be established if the landowner gave permission.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1007.&lawCode=CIV',
+    tags:['easement','prescriptive easement','adverse use','5 years','driveway','path access']
+  },
+  // ── Off-Grid ──
+  {
+    id:'ca-hsc-13869-rainwater', state:'California', level:'state',
+    reference:'Water Code § 10573 / AB 1750 (2012)',
+    category:'off-grid', usefulness:3,
+    title:'Rainwater Harvesting — Legal in California',
+    description:'California explicitly allows residential rainwater harvesting. Single-family homes may collect and use rainwater for outdoor irrigation and (with treatment) indoor non-potable uses without a water right permit.',
+    conditions:'Residential use only at the point of collection. Must comply with local health codes for indoor non-potable use. Commercial-scale collection still requires a water right.',
+    url:'https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=201120120AB1750',
+    tags:['rainwater','water harvesting','off-grid','cistern','water independence']
   },
   {
-    id: "ca-hoa-limitations",
-    state: "California",
-    level: "state",
-    reference: "Civil Code § 4736 / § 4745",
-    category: "variance",
-    title: "HOA Limits on Outdoor Landscaping & Clotheslines",
-    description: "HOAs cannot prohibit: (1) water-efficient landscaping or drought-tolerant plants, (2) clotheslines or drying racks in private backyards, (3) composting in private areas. These 'solar easements' and green rights override CC&Rs.",
-    conditions: "Clotheslines must be in private areas not visible from street. HOA may impose reasonable restrictions on placement and screening.",
-    usefulness: 3,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=4745.&lawCode=CIV",
-    tags: ["HOA limits", "clothesline", "drought landscaping", "composting", "HOA override"]
+    id:'ca-gov-65402-solar', state:'California', level:'state',
+    reference:'Government Code § 65850.5 / Solar Rights Act',
+    category:'off-grid', usefulness:4,
+    title:'Solar Rights Act — HOA Cannot Ban Solar',
+    description:'HOAs and CC&Rs cannot prohibit or unreasonably restrict installation of solar energy systems. Any restriction that increases cost by more than $1,000 or decreases efficiency by more than 10% is unenforceable.',
+    conditions:'Applies to solar panels and solar water heaters. HOAs may impose reasonable aesthetic restrictions (placement, screening) but cannot prohibit outright.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65850.5.&lawCode=GOV',
+    tags:['solar','HOA','renewable energy','solar rights','panels','unenforceable restriction']
   },
   {
-    id: "ca-govt-65589-density-bonus",
-    state: "California",
-    level: "state",
-    reference: "Government Code § 65915",
-    category: "adu",
-    title: "Density Bonus Law",
-    description: "Developers and property owners who include affordable units in a residential project are entitled to a bonus of additional market-rate units (up to 50% more units than base zoning allows), plus concessions and incentives, as a matter of right.",
-    conditions: "Requires at least 5% of units to be affordable at very-low income, or 10% at lower income, or 10% for moderate-income condos. State law; cities cannot deny if standards met.",
-    usefulness: 3,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=65915.&lawCode=GOV",
-    tags: ["density bonus", "affordable housing", "extra units", "development", "by-right"]
+    id:'ca-prc-25982-solar-shade', state:'California', level:'state',
+    reference:'Public Resources Code § 25982',
+    category:'off-grid', usefulness:4,
+    title:'Solar Shade Control Act — Neighbors Cannot Block Your Solar',
+    description:'After you install a qualifying solar energy system, neighbors cannot allow vegetation or structures to shade more than 10% of your solar collectors during peak hours. Violations can be enforced in court with damages and injunctive relief.',
+    conditions:'You must have recorded the solar easement with the county. The solar system must have been installed after 1979. Does not apply to trees planted before the solar system was installed. Some exemptions for protected trees.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=25982.&lawCode=PRC',
+    tags:['solar','shade','neighbor','solar easement','solar shade control','shade trees']
   },
   {
-    id: "ca-septic-perc",
-    state: "California",
-    level: "state",
-    reference: "California Plumbing Code § 720 / Local County Rules",
-    category: "off-grid",
-    title: "Onsite Wastewater Treatment (Septic) Rights",
-    description: "Property owners in areas without municipal sewer access have the right to install and use onsite septic systems (OWTS). Many rural counties have alternative septic standards for challenging soils or small lots.",
-    conditions: "Must pass percolation test. County environmental health approval required. Setbacks from wells and property lines apply. Some counties allow alternative/innovative systems where conventional perc fails.",
-    usefulness: 4,
-    url: "https://www.waterboards.ca.gov/water_issues/programs/owts/",
-    tags: ["septic", "OWTS", "off-grid sewage", "rural", "perc test", "alternative septic"]
+    id:'ca-pub-util-2827-netmetering', state:'California', level:'state',
+    reference:'Public Utilities Code § 2827.1',
+    category:'off-grid', usefulness:4,
+    title:'Net Energy Metering (NEM) — Credit for Excess Solar',
+    description:'Solar customers are credited for excess electricity sent back to the grid at a set rate. Credits offset your future utility bills. Makes rooftop solar financially viable for most homeowners by eliminating the need for batteries.',
+    conditions:'Must be a customer of an investor-owned utility (PG&E, SCE, SDG&E). System size limits apply (typically up to 1 MW). NEM 3.0 rates effective April 2023 for new applicants — lower export rates than prior NEM 2.0.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=2827.1.&lawCode=PUC',
+    tags:['solar','net metering','NEM','utility credit','grid tie','excess power']
   },
   {
-    id: "ca-well-domestic",
-    state: "California",
-    level: "state",
-    reference: "Water Code § 13750 / County Well Ordinances",
-    category: "off-grid",
-    title: "Domestic Water Well Rights",
-    description: "Property owners on parcels not served by a public water system have the right to drill a domestic water well, subject to county permit. Many rural counties have streamlined processes for domestic wells (under 25 connections or 15 service connections).",
-    conditions: "County permit required. Must meet setbacks from septic systems, property lines, and roads. Water quality testing required. Groundwater basin conditions vary — some basins have restrictions.",
-    usefulness: 4,
-    url: "https://www.waterboards.ca.gov/drinking_water/certlic/drinkingwater/small_water_systems.html",
-    tags: ["well", "domestic water", "off-grid water", "rural", "groundwater", "self-sufficient"]
+    id:'ca-septic-perc', state:'California', level:'state',
+    reference:'California Plumbing Code § 720 / Local County Rules',
+    category:'off-grid', usefulness:4,
+    title:'Onsite Wastewater Treatment (Septic) Rights',
+    description:'Property owners in areas without municipal sewer access have the right to install and use onsite septic systems (OWTS). Many rural counties have alternative septic standards for challenging soils or small lots.',
+    conditions:'Must pass percolation test. County environmental health approval required. Setbacks from wells and property lines apply. Some counties allow alternative/innovative systems where conventional perc fails.',
+    url:'https://www.waterboards.ca.gov/water_issues/programs/owts/',
+    tags:['septic','OWTS','off-grid sewage','rural','perc test','alternative septic']
   },
   {
-    id: "ca-mobilehome-residential",
-    state: "California",
-    level: "state",
-    reference: "Health & Safety Code § 18551",
-    category: "owner-builder",
-    title: "Manufactured Home as Permanent Residence",
-    description: "Manufactured homes can be placed on private land as a permanent residential structure, treated equivalently to site-built homes for most purposes. Owners can install manufactured homes without having to build a traditional foundation-based structure.",
-    conditions: "Must meet HUD Manufactured Housing Construction standards. Must be installed on a permanent foundation per local requirements. Zoning must allow residential use.",
-    usefulness: 4,
-    url: "https://www.hcd.ca.gov/manufactured-mobile-home/title-25",
-    tags: ["manufactured home", "mobile home", "modular", "permanent residence", "alternative housing"]
+    id:'ca-well-domestic', state:'California', level:'state',
+    reference:'Water Code § 13750 / County Well Ordinances',
+    category:'off-grid', usefulness:4,
+    title:'Domestic Water Well Rights',
+    description:'Property owners on parcels not served by a public water system have the right to drill a domestic water well, subject to county permit. Many rural counties have streamlined processes for domestic wells.',
+    conditions:'County permit required. Must meet setbacks from septic systems, property lines, and roads. Water quality testing required. Groundwater basin conditions vary — some basins have restrictions.',
+    url:'https://www.waterboards.ca.gov/drinking_water/certlic/drinkingwater/small_water_systems.html',
+    tags:['well','domestic water','off-grid water','rural','groundwater','self-sufficient']
   },
   {
-    id: "ca-civ-887-prescriptive-easement",
-    state: "California",
-    level: "state",
-    reference: "Civil Code § 1007 / Case Law",
-    category: "grandfathering",
-    title: "Prescriptive Easement Rights",
-    description: "If you (or previous owners) have openly, continuously, and adversely used a portion of a neighbor's property for 5+ years, you may have acquired a prescriptive easement — a legal right to continue that use (e.g., a driveway, path, or water access).",
-    conditions: "Use must be open, notorious, hostile, and continuous for 5 years. Must file a court action to formalize. Cannot be established if the landowner gave permission.",
-    usefulness: 2,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1007.&lawCode=CIV",
-    tags: ["easement", "prescriptive easement", "adverse use", "5 years", "driveway", "path access"]
+    id:'us-fed-rural-dev-usda', state:'Federal', level:'federal',
+    reference:'7 U.S.C. § 1926 / USDA Rural Development',
+    category:'off-grid', usefulness:3,
+    title:'USDA Rural Development — Water & Wastewater Grants/Loans',
+    description:'USDA provides grants and low-interest loans to rural communities and property owners for water/wastewater infrastructure, including private wells and community water systems in rural areas (typically under 10,000 population).',
+    conditions:'Must be in a qualifying rural area. Income limits apply for some programs. Applications through local USDA Rural Development office.',
+    url:'https://www.rd.usda.gov/programs-services/water-environmental-programs',
+    tags:['USDA','rural development','water grant','well funding','federal program']
+  },
+  // ── Variance / HOA Limits ──
+  {
+    id:'ca-hoa-limitations', state:'California', level:'state',
+    reference:'Civil Code § 4736 / § 4745',
+    category:'variance', usefulness:3,
+    title:'HOA Cannot Ban Drought Landscaping, Clotheslines, or Composting',
+    description:'HOAs cannot prohibit: (1) water-efficient landscaping or drought-tolerant plants, (2) clotheslines or drying racks in private backyards, (3) composting in private areas. These rights override CC&Rs.',
+    conditions:'Clotheslines must be in private areas not visible from street. HOA may impose reasonable restrictions on placement and screening, but cannot prohibit outright.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=4745.&lawCode=CIV',
+    tags:['HOA limits','clothesline','drought landscaping','composting','HOA override','CC&Rs']
   },
   {
-    id: "ca-civ-adverse-possession",
-    state: "California",
-    level: "state",
-    reference: "Code of Civil Procedure § 318–325",
-    category: "grandfathering",
-    title: "Adverse Possession",
-    description: "Property that has been openly, continuously, exclusively, and hostilely occupied and maintained (including paying property taxes) for 5 years can be claimed as one's own through a court action.",
-    conditions: "Must occupy for 5 continuous years, pay all property taxes, and have 'color of title' or claim of right. Must file a quiet title action. Difficult to succeed — legal counsel recommended.",
-    usefulness: 2,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=318.&lawCode=CCP",
-    tags: ["adverse possession", "squatter's rights", "5 years", "quiet title", "property claim"]
+    id:'ca-pvt-road-maintenance', state:'California', level:'state',
+    reference:'Streets & Highways Code § 1160–1162',
+    category:'variance', usefulness:3,
+    title:'Private Road Maintenance Agreements',
+    description:'Property owners on private roads can record maintenance agreements establishing legal obligations for all road users to share maintenance costs. Protects against one owner refusing to contribute to road upkeep.',
+    conditions:'Agreement must be recorded with county. All lot owners using the road should be parties. Enforcement through civil action.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1160.&lawCode=SHC',
+    tags:['private road','road maintenance','easement','rural access','shared road']
+  },
+  // ── Tax & Homestead ──
+  {
+    id:'ca-prop13', state:'California', level:'state',
+    reference:'California Constitution Art. XIII A (Prop 13)',
+    category:'tax-homestead', usefulness:5,
+    title:'Proposition 13 — Property Tax Assessment Cap',
+    description:'Limits property tax to 1% of assessed value at time of purchase, with annual increases capped at 2%. Long-term owners pay far below market-rate taxes. Also limits reassessment due to improvements in many cases.',
+    conditions:'Triggers reassessment on sale or transfer. Parent-to-child and grandparent-to-grandchild transfers may be excluded under Prop 19 (with conditions). New construction triggers partial reassessment.',
+    url:'https://www.boe.ca.gov/proptaxes/prop13.htm',
+    tags:['Prop 13','tax cap','assessed value','2% cap','California landmark']
   },
   {
-    id: "us-fed-rural-dev-usda",
-    state: "Federal",
-    level: "federal",
-    reference: "7 U.S.C. § 1926 / USDA Rural Development",
-    category: "off-grid",
-    title: "USDA Rural Development — Community Facilities & Water Grants",
-    description: "USDA provides grants and low-interest loans to rural communities and property owners for water/wastewater infrastructure, including private wells and community water systems in rural areas (typically under 10,000 population).",
-    conditions: "Must be in a rural area. Income limits apply for some programs. Applications through local USDA Rural Development office.",
-    usefulness: 3,
-    url: "https://www.rd.usda.gov/programs-services/water-environmental-programs",
-    tags: ["USDA", "rural development", "water grant", "well funding", "federal program"]
+    id:'ca-rev-tax-218', state:'California', level:'state',
+    reference:'Revenue & Taxation Code § 218',
+    category:'tax-homestead', usefulness:3,
+    title:'Homeowner\'s Property Tax Exemption',
+    description:'Owner-occupied residential properties receive a $7,000 reduction in assessed value for property tax purposes — reduces annual tax bill by roughly $70/year at 1% rate. Simple to claim, automatic annual renewal.',
+    conditions:'Must be owner-occupied as of January 1. Must file a claim with the county assessor. Not applicable to vacation homes or investment properties.',
+    url:'https://www.boe.ca.gov/proptaxes/exemptions/homeowners.htm',
+    tags:['property tax','homeowner exemption','homestead','tax reduction']
   },
   {
-    id: "ca-ins-code-homestead",
-    state: "California",
-    level: "state",
-    reference: "Code of Civil Procedure § 704.710–704.850",
-    category: "tax-homestead",
-    title: "Homestead Declaration — Creditor Protection",
-    description: "Recording a homestead declaration protects up to $300,000–$600,000 of home equity from unsecured creditor judgments. Protects your home equity even in bankruptcy (within limits).",
-    conditions: "Must be recorded with county recorder. Automatic homestead protection exists but is lower. Recorded declaration provides higher exemption. Does not protect against mortgage, property tax liens, or secured debts.",
-    usefulness: 4,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=704.710.&lawCode=CCP",
-    tags: ["homestead declaration", "creditor protection", "equity protection", "bankruptcy", "judgment proof"]
+    id:'ca-rev-tax-434', state:'California', level:'state',
+    reference:'Revenue & Taxation Code § 434',
+    category:'tax-homestead', usefulness:4,
+    title:'Williamson Act — Agricultural Land Tax Reduction',
+    description:'Landowners who enter a Williamson Act contract agree to keep land agricultural for 10+ years and receive property taxes assessed at agricultural use value — often 20–75% lower than market value.',
+    conditions:'Minimum parcel size (varies by county, typically 10–100 acres). Must keep land in agricultural use for contract term (10 years, auto-renews). Withdrawal triggers penalty taxes.',
+    url:'https://www.conservation.ca.gov/dlrp/lca',
+    tags:['Williamson Act','ag land','tax reduction','farmland preservation','10 year contract']
   },
   {
-    id: "ca-pvt-road-maintenance",
-    state: "California",
-    level: "state",
-    reference: "Streets & Highways Code § 1160–1162",
-    category: "variance",
-    title: "Private Road Maintenance Agreements",
-    description: "Property owners on private roads can form maintenance agreements with county recording — establishing legal obligations for all road users to share maintenance costs. Protects against one owner refusing to contribute.",
-    conditions: "Agreement must be recorded with county. All lot owners using the road should be parties. Enforcement through civil action.",
-    usefulness: 3,
-    url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=1160.&lawCode=SHC",
-    tags: ["private road", "road maintenance", "easement", "rural access", "shared road"]
-  }
+    id:'ca-rev-tax-2055-disabled-vet', state:'California', level:'state',
+    reference:'Revenue & Taxation Code § 205.5',
+    category:'tax-homestead', usefulness:4,
+    title:'Disabled Veteran\'s Property Tax Exemption',
+    description:'100% service-connected disabled veterans (or their surviving spouses) receive a $250,000 exemption on assessed value — saving roughly $2,500/year in property taxes at the 1% rate. Low-income qualifying veterans receive a full exemption.',
+    conditions:'Must be 100% service-connected disabled per VA determination, or low-income qualifying. Must be primary residence. Must file annually with county assessor. Surviving unmarried spouse of qualifying veteran may also qualify.',
+    url:'https://www.boe.ca.gov/proptaxes/exemptions/disabled_veteran.htm',
+    tags:['disabled veteran','vet','property tax','exemption','VA','military']
+  },
+  {
+    id:'ca-ins-code-homestead', state:'California', level:'state',
+    reference:'Code of Civil Procedure § 704.710–704.850',
+    category:'tax-homestead', usefulness:4,
+    title:'Homestead Declaration — Creditor Protection',
+    description:'Recording a homestead declaration protects up to $300,000–$600,000 of home equity from unsecured creditor judgments. Protects your home equity even in bankruptcy within limits.',
+    conditions:'Must be recorded with county recorder. Automatic homestead protection exists but is lower. Recorded declaration provides the higher exemption. Does not protect against mortgage, property tax liens, or secured debts.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=704.710.&lawCode=CCP',
+    tags:['homestead declaration','creditor protection','equity protection','bankruptcy','judgment proof']
+  },
+  {
+    id:'ca-rev-tax-4986-penalty', state:'California', level:'state',
+    reference:'Revenue & Taxation Code § 4986.8',
+    category:'tax-homestead', usefulness:3,
+    title:'First-Time Late Property Tax Penalty Cancellation',
+    description:'Property owners who pay their property taxes late for the first time may apply to have the 10% penalty cancelled if they can show they had a reasonable cause for late payment and it is their first late payment in 3 years.',
+    conditions:'Must be first late payment in 3 years on that property. Must file a formal claim with the county tax collector. Must demonstrate reasonable cause (illness, disaster, clerical error, etc.).',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=4986.8.&lawCode=RTC',
+    tags:['property tax','late payment','penalty cancellation','first time','tax penalty waiver']
+  },
+  // ── Water Rights ──
+  {
+    id:'ca-water-riparian', state:'California', level:'state',
+    reference:'California Water Code / Riparian Rights Doctrine',
+    category:'water-rights', usefulness:3,
+    title:'Riparian Water Rights',
+    description:'Landowners adjacent to a natural watercourse have the right to use a reasonable share of the water for beneficial use on their land. These rights are tied to the land and transfer with ownership.',
+    conditions:'Land must be contiguous to and dependent on the watercourse. Use must be reasonable and beneficial. Does not include the right to store or divert large amounts. Check for senior appropriative rights.',
+    url:'https://water.ca.gov/Programs/Water-Use-And-Efficiency/Water-Rights',
+    tags:['water rights','riparian','stream','water access','beneficial use']
+  },
+  // ── Neighbor Rights ──
+  {
+    id:'ca-civil-841-fence', state:'California', level:'state',
+    reference:'Civil Code § 841',
+    category:'neighbor-rights', usefulness:3,
+    title:'Fence Law — Shared Cost Between Neighbors',
+    description:'Adjoining landowners share equally in the cost of maintaining, repairing, and replacing boundary fences. The law includes a formal notice and dispute process to compel a neighbor to contribute their share.',
+    conditions:'Applies to boundary fences. One owner must serve written notice at least 30 days before work. Neighbor has 30 days to object. Good cause required to deviate from 50/50 split. Does not apply to fences solely for one owner\'s benefit.',
+    url:'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=841.&lawCode=CIV',
+    tags:['fence','boundary','shared cost','neighbor','property line','fence law']
+  },
 ];
 
-// ── State & Filtering ─────────────────────────────────────────────────────────
-let userCodes = JSON.parse(localStorage.getItem('municipalUserCodes') || '[]');
-function allCodes() { return [...BUILTIN, ...userCodes]; }
+// ── Persistent state ───────────────────────────────────────────────────────────
+let userCodes   = JSON.parse(localStorage.getItem('municipalUserCodes') || '[]');
+let favorites   = new Set(JSON.parse(localStorage.getItem('mcf:favorites') || '[]'));
+let notes       = JSON.parse(localStorage.getItem('mcf:notes') || '{}');
+let showFavOnly = false;
+let editingId   = null;
+let currentDetailId = null;
+let exportDropOpen  = false;
 
-function buildFilters() {
-  const states = [...new Set(allCodes().map(c => c.state))].sort();
-  const cats   = [...new Set(allCodes().map(c => c.category))].sort();
-  const sf = document.getElementById('stateFilter');
-  const cf = document.getElementById('catFilter');
-  states.forEach(s => { const o = document.createElement('option'); o.value = s; o.text = s; sf.appendChild(o); });
-  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.text = catLabel(c); cf.appendChild(o); });
+function allCodes()    { return [...BUILTIN, ...userCodes]; }
+function findCode(id)  { return allCodes().find(c => c.id === id); }
+function isCustom(id)  { return userCodes.some(c => c.id === id); }
+
+function saveFavorites() { localStorage.setItem('mcf:favorites', JSON.stringify([...favorites])); }
+function saveNotes()     { localStorage.setItem('mcf:notes', JSON.stringify(notes)); }
+function saveUserCodes() { localStorage.setItem('municipalUserCodes', JSON.stringify(userCodes)); }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const CAT_LABELS = {
+  'owner-builder':  'Owner-Builder',
+  'adu':            'ADU / JADU',
+  'permit-exempt':  'Permit Exemption',
+  'ag-rights':      'Agricultural Rights',
+  'grandfathering': 'Grandfathering',
+  'off-grid':       'Off-Grid Systems',
+  'variance':       'HOA / Variance',
+  'tax-homestead':  'Tax & Homestead',
+  'right-to-farm':  'Right to Farm',
+  'water-rights':   'Water Rights',
+  'neighbor-rights':'Neighbor Rights',
+};
+function catLabel(cat)  { return CAT_LABELS[cat] || cat; }
+function levelLabel(lv) { return {state:'State',county:'County',city:'City',federal:'Federal'}[lv] || lv; }
+function starsHtml(n)   { return '★'.repeat(n) + '☆'.repeat(5-n); }
+function catCls(cat)    { return 'cat-' + (cat || 'owner-builder'); }
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+function toggleFavorite(id) {
+  if (favorites.has(id)) favorites.delete(id); else favorites.add(id);
+  saveFavorites();
+  // update fav stars on cards (without full re-render)
+  document.querySelectorAll('.fav-star').forEach(btn => {
+    if (btn.dataset.id !== id) return;
+    const on = favorites.has(id);
+    btn.classList.toggle('active', on);
+    btn.textContent = on ? '★' : '☆';
+    btn.title = on ? 'Remove favorite' : 'Add to favorites';
+  });
+  // update detail-view fav button if open
+  const dfav = document.getElementById('d-fav');
+  if (dfav && currentDetailId === id) {
+    const on = favorites.has(id);
+    dfav.classList.toggle('active', on);
+    dfav.textContent = on ? '★ Favorited' : '☆ Favorite';
+  }
+  // update note-dot on cards
+  document.querySelectorAll('.note-dot').forEach(el => {
+    if (el.dataset.id === id) el.textContent = notes[id] ? '📝' : '';
+  });
 }
 
-function catLabel(cat) {
-  const map = {
-    'owner-builder':  'Owner-Builder',
-    'adu':            'ADU / JADU',
-    'permit-exempt':  'Permit Exemption',
-    'ag-rights':      'Agricultural Rights',
-    'grandfathering': 'Grandfathering',
-    'off-grid':       'Off-Grid Systems',
-    'variance':       'Variance / HOA Limits',
-    'tax-homestead':  'Tax & Homestead',
-    'right-to-farm':  'Right to Farm',
-    'water-rights':   'Water Rights',
-  };
-  return map[cat] || cat;
+function toggleFavFilter() {
+  showFavOnly = !showFavOnly;
+  const btn = document.getElementById('favBtn');
+  btn.classList.toggle('active', showFavOnly);
+  btn.textContent = showFavOnly ? '★ Favorites' : '☆ Favorites';
+  onFilterChange();
 }
 
-function catClass(cat) { return 'cat-' + cat; }
-
-function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
-
-function levelLabel(lvl) {
-  return { state:'State', county:'County', city:'City', federal:'Federal' }[lvl] || lvl;
+// ── Notes ─────────────────────────────────────────────────────────────────────
+function saveNote(id, text) {
+  if (text.trim()) notes[id] = text.trim();
+  else delete notes[id];
+  saveNotes();
+  document.querySelectorAll('.note-dot').forEach(el => {
+    if (el.dataset.id === id) el.textContent = notes[id] ? '📝' : '';
+  });
 }
 
+// ── Filtering ─────────────────────────────────────────────────────────────────
 function filter(codes) {
-  const q    = document.getElementById('search').value.toLowerCase();
-  const st   = document.getElementById('stateFilter').value;
-  const cat  = document.getElementById('catFilter').value;
-  const sort = document.getElementById('sortBy').value;
+  const q   = document.getElementById('search').value.toLowerCase().trim();
+  const st  = document.getElementById('stateFilter').value;
+  const lv  = document.getElementById('levelFilter').value;
+  const cat = document.getElementById('catFilter').value;
+  const srt = document.getElementById('sortBy').value;
 
   let out = codes.filter(c => {
+    if (showFavOnly && !favorites.has(c.id)) return false;
     if (st  && c.state !== st)    return false;
+    if (lv  && c.level !== lv)    return false;
     if (cat && c.category !== cat) return false;
     if (q) {
       const blob = [c.title, c.description, c.reference, c.state, c.conditions, ...(c.tags||[])].join(' ').toLowerCase();
@@ -691,18 +946,55 @@ function filter(codes) {
     return true;
   });
 
-  if (sort === 'usefulness') out.sort((a,b) => b.usefulness - a.usefulness);
-  else if (sort === 'alpha') out.sort((a,b) => a.title.localeCompare(b.title));
-  else if (sort === 'state') out.sort((a,b) => a.state.localeCompare(b.state) || b.usefulness - a.usefulness);
-
+  if (srt === 'usefulness') out.sort((a,b) => b.usefulness - a.usefulness);
+  else if (srt === 'alpha') out.sort((a,b) => a.title.localeCompare(b.title));
+  else if (srt === 'state') out.sort((a,b) => a.state.localeCompare(b.state) || b.usefulness - a.usefulness);
   return out;
 }
 
-function addTagSearch(tag) {
-  document.getElementById('search').value = tag;
-  render();
+// ── URL state ─────────────────────────────────────────────────────────────────
+function writeUrlState() {
+  const p = new URLSearchParams();
+  const q = document.getElementById('search').value;
+  const s = document.getElementById('stateFilter').value;
+  const l = document.getElementById('levelFilter').value;
+  const c = document.getElementById('catFilter').value;
+  const o = document.getElementById('sortBy').value;
+  if (q) p.set('q', q);
+  if (s) p.set('state', s);
+  if (l) p.set('level', l);
+  if (c) p.set('cat', c);
+  if (o && o !== 'usefulness') p.set('sort', o);
+  if (showFavOnly) p.set('fav', '1');
+  const h = p.toString();
+  history.replaceState(null, '', h ? '#' + h : location.pathname + location.search);
 }
 
+function applyUrlState() {
+  const hash = location.hash.slice(1);
+  if (!hash) return;
+  const p = new URLSearchParams(hash);
+  if (p.get('q'))     document.getElementById('search').value = p.get('q');
+  if (p.get('state')) document.getElementById('stateFilter').value = p.get('state');
+  if (p.get('level')) document.getElementById('levelFilter').value = p.get('level');
+  if (p.get('cat'))   document.getElementById('catFilter').value = p.get('cat');
+  if (p.get('sort'))  document.getElementById('sortBy').value = p.get('sort');
+  if (p.get('fav') === '1') {
+    showFavOnly = true;
+    const btn = document.getElementById('favBtn');
+    btn.classList.add('active');
+    btn.textContent = '★ Favorites';
+  }
+}
+
+function onFilterChange() { render(); writeUrlState(); }
+
+function addTagSearch(tag) {
+  document.getElementById('search').value = tag;
+  onFilterChange();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
 function render() {
   const grid  = document.getElementById('grid');
   const codes = filter(allCodes());
@@ -710,68 +1002,280 @@ function render() {
   grid.innerHTML = '';
 
   if (!codes.length) {
-    grid.innerHTML = '<div class="empty"><h2>No codes found</h2><p>Try a different search or filter.</p></div>';
+    grid.innerHTML = '<div class="empty"><h2>No codes found</h2><p>Try a different search term or filter.</p></div>';
     return;
   }
 
   codes.forEach(c => {
+    const isFav   = favorites.has(c.id);
+    const hasNote = !!notes[c.id];
+    const custom  = isCustom(c.id);
     const div = document.createElement('div');
     div.className = 'card';
-    div.innerHTML = `
-      <div class="card-top">
-        <span class="jurisdiction ${c.level}">${levelLabel(c.level)}: ${c.state}</span>
-        <span class="stars" title="Usefulness: ${c.usefulness}/5">${stars(c.usefulness)}</span>
-      </div>
-      <div class="card-body">
-        <div class="code-ref">${c.reference}</div>
-        <div class="card-title">${c.title}</div>
-        <span class="cat-tag ${catClass(c.category)}">${catLabel(c.category)}</span>
-        <div class="description">${c.description}</div>
-        ${c.conditions ? `<div class="conditions"><strong>Key conditions</strong>${c.conditions}</div>` : ''}
-      </div>
-      <div class="card-foot">
-        ${(c.tags||[]).map(t => `<span class="tag-pill" onclick="addTagSearch('${t.replace(/'/g,"\\'")}')">${t}</span>`).join('')}
-        ${c.url ? `<a class="source-link" href="${c.url}" target="_blank" rel="noopener">View Source ↗</a>` : ''}
-      </div>`;
+    div.dataset.id = c.id;
+    div.innerHTML =
+      `<div class="card-top">` +
+        `<div class="card-top-left">` +
+          `<span class="jurisdiction ${esc(c.level)}">${esc(levelLabel(c.level))}: ${esc(c.state)}</span>` +
+          (custom ? `<span class="custom-badge">Custom</span>` : '') +
+        `</div>` +
+        `<div class="card-top-right">` +
+          `<span class="note-dot" data-id="${esc(c.id)}" title="Has notes">${hasNote ? '📝' : ''}</span>` +
+          `<span class="stars" title="Usefulness: ${c.usefulness}/5">${starsHtml(c.usefulness)}</span>` +
+          `<button class="fav-star ${isFav ? 'active' : ''}" data-id="${esc(c.id)}" title="${isFav ? 'Remove favorite' : 'Add to favorites'}">${isFav ? '★' : '☆'}</button>` +
+        `</div>` +
+      `</div>` +
+      `<div class="card-body">` +
+        `<div class="code-ref">${esc(c.reference)}</div>` +
+        `<div class="card-title">${esc(c.title)}</div>` +
+        `<span class="cat-tag ${catCls(c.category)}">${esc(catLabel(c.category))}</span>` +
+        `<div class="description">${esc(c.description)}</div>` +
+        (c.conditions ? `<div class="conditions">${esc(c.conditions)}</div>` : '') +
+      `</div>` +
+      `<div class="card-foot">` +
+        (c.tags||[]).map(t => `<span class="tag-pill" data-tag="${esc(t)}">${esc(t)}</span>`).join('') +
+      `</div>`;
     grid.appendChild(div);
   });
 }
 
-// ── Add Code ──────────────────────────────────────────────────────────────────
-function addCodePrompt() {
-  const title = prompt('Code title:'); if (!title) return;
-  const ref   = prompt('Code reference (e.g., "CA Gov Code § 12345"):'); if (!ref) return;
-  const state = prompt('State (e.g., "California"):') || 'Unknown';
-  const desc  = prompt('Description (plain English):'); if (!desc) return;
-  const url   = prompt('Source URL (or leave blank):') || '';
-  const tags  = (prompt('Tags (comma-separated):') || '').split(',').map(t=>t.trim()).filter(Boolean);
-  const useful = parseInt(prompt('Usefulness 1–5:'), 10) || 3;
+// ── Grid event delegation ─────────────────────────────────────────────────────
+document.getElementById('grid').addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  const id = card.dataset.id;
+
+  if (e.target.closest('.fav-star')) { e.stopPropagation(); toggleFavorite(id); return; }
+  if (e.target.classList.contains('tag-pill')) { e.stopPropagation(); addTagSearch(e.target.dataset.tag); return; }
+  openDetail(id);
+});
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+  editingId = null;
+  currentDetailId = null;
+}
+
+// ── Detail view ───────────────────────────────────────────────────────────────
+function openDetail(id) {
+  const c = findCode(id);
+  if (!c) return;
+  currentDetailId = id;
+  const isFav  = favorites.has(id);
+  const custom = isCustom(id);
+
+  document.getElementById('modal-body').innerHTML =
+    `<div class="detail-view">` +
+      `<div class="detail-top">` +
+        `<span class="jurisdiction ${esc(c.level)}">${esc(levelLabel(c.level))}: ${esc(c.state)}</span>` +
+        `<div class="detail-actions">` +
+          `<button class="detail-fav ${isFav ? 'active' : ''}" id="d-fav">${isFav ? '★ Favorited' : '☆ Favorite'}</button>` +
+          (custom ? `<button class="btn-sm-secondary" id="d-edit">Edit</button>` : '') +
+        `</div>` +
+      `</div>` +
+      `<div class="code-ref">${esc(c.reference)}</div>` +
+      `<h2 class="detail-title">${esc(c.title)}</h2>` +
+      `<span class="cat-tag ${catCls(c.category)}">${esc(catLabel(c.category))}</span>` +
+      `<p class="detail-desc">${esc(c.description)}</p>` +
+      (c.conditions ?
+        `<div class="detail-conditions"><strong>Key Conditions</strong><p>${esc(c.conditions)}</p></div>` : '') +
+      (c.tags?.length ?
+        `<div class="detail-tags">${c.tags.map(t=>`<span class="tag-pill" data-tag="${esc(t)}">${esc(t)}</span>`).join('')}</div>` : '') +
+      (c.url ?
+        `<a class="detail-source" href="${esc(c.url)}" target="_blank" rel="noopener">View Official Source ↗</a>` : '') +
+      `<div class="notes-section">` +
+        `<label for="d-note">Private Notes</label>` +
+        `<textarea id="d-note" placeholder="Your private notes about this code…">${esc(notes[id] || '')}</textarea>` +
+      `</div>` +
+      `<div class="disclaimer-box">⚠ Informational only — not legal advice. Verify with official sources and a licensed attorney before relying on any provision.</div>` +
+    `</div>`;
+
+  // Wire interactive elements
+  document.getElementById('d-fav').addEventListener('click', () => toggleFavorite(id));
+  if (custom) document.getElementById('d-edit')?.addEventListener('click', () => { closeModal(); openCodeForm('edit', id); });
+  const noteTA = document.getElementById('d-note');
+  noteTA.addEventListener('blur', () => saveNote(id, noteTA.value));
+
+  // Detail tags → tag search
+  document.getElementById('modal-body').querySelectorAll('.tag-pill').forEach(pill => {
+    pill.addEventListener('click', () => { addTagSearch(pill.dataset.tag); closeModal(); });
+  });
+
+  openModal();
+}
+
+// ── Code form ─────────────────────────────────────────────────────────────────
+function openCodeForm(mode, id = null) {
+  editingId = id;
+  const c = id ? findCode(id) : null;
+
+  const catOptions = Object.entries(CAT_LABELS)
+    .map(([v,l]) => `<option value="${v}"${c?.category===v?' selected':''}>${l}</option>`).join('');
+  const lvlOptions = ['state','county','city','federal']
+    .map(v => `<option value="${v}"${(c?.level||'state')===v?' selected':''}>${levelLabel(v)}</option>`).join('');
+  const stateDatalist = [...new Set(allCodes().map(x=>x.state))].sort()
+    .map(s=>`<option value="${esc(s)}">`).join('');
+
+  document.getElementById('modal-body').innerHTML =
+    `<div class="form-view">` +
+      `<h2>${mode==='edit' ? 'Edit Code' : 'Add New Code'}</h2>` +
+      `<div class="form-fields">` +
+        `<label>Title *<input type="text" id="f-title" value="${esc(c?.title||'')}" placeholder="Short descriptive title"></label>` +
+        `<label>Code Reference *<input type="text" id="f-ref" value="${esc(c?.reference||'')}" placeholder="e.g., CA Gov Code § 65852.2"></label>` +
+        `<div class="form-row">` +
+          `<label>State *<input type="text" id="f-state" list="f-states" value="${esc(c?.state||'')}"><datalist id="f-states">${stateDatalist}</datalist></label>` +
+          `<label>Level<select id="f-level">${lvlOptions}</select></label>` +
+        `</div>` +
+        `<label>Category<select id="f-cat">${catOptions}</select></label>` +
+        `<label>Description *<textarea id="f-desc" rows="4" placeholder="Plain-English description of what this provision allows">${esc(c?.description||'')}</textarea></label>` +
+        `<label>Key Conditions<textarea id="f-cond" rows="3" placeholder="Requirements, exceptions, limitations">${esc(c?.conditions||'')}</textarea></label>` +
+        `<label>Source URL<input type="url" id="f-url" value="${esc(c?.url||'')}" placeholder="https://…"></label>` +
+        `<label>Tags (comma-separated)<input type="text" id="f-tags" value="${esc((c?.tags||[]).join(', '))}" placeholder="rural, no-permit, ADU"></label>` +
+        `<label>Usefulness (1–5)` +
+          `<div class="usefulness-row">` +
+            `<input type="range" id="f-use" min="1" max="5" value="${c?.usefulness||3}" oninput="document.getElementById('f-use-val').textContent=this.value">` +
+            `<span class="usefulness-val" id="f-use-val">${c?.usefulness||3}</span>` +
+          `</div>` +
+        `</label>` +
+      `</div>` +
+      `<div class="form-actions">` +
+        `<button class="btn-primary" id="f-save">Save</button>` +
+        `<button class="btn-secondary" id="f-cancel">Cancel</button>` +
+        (mode==='edit' ? `<button class="btn-danger" id="f-delete">Delete</button>` : '') +
+      `</div>` +
+    `</div>`;
+
+  document.getElementById('f-save').addEventListener('click', saveCode);
+  document.getElementById('f-cancel').addEventListener('click', closeModal);
+  if (mode==='edit') document.getElementById('f-delete')?.addEventListener('click', () => deleteCode(id));
+  openModal();
+}
+
+function saveCode() {
+  const title = document.getElementById('f-title').value.trim();
+  const ref   = document.getElementById('f-ref').value.trim();
+  const state = document.getElementById('f-state').value.trim();
+  const desc  = document.getElementById('f-desc').value.trim();
+  if (!title || !ref || !state || !desc) { alert('Title, Reference, State, and Description are required.'); return; }
 
   const code = {
-    id: 'user-' + Date.now(),
-    state, level: 'state',
-    reference: ref,
-    category: 'owner-builder',
+    id:          editingId || ('user-' + Date.now()),
+    state, level: document.getElementById('f-level').value,
+    reference:   ref,
+    category:    document.getElementById('f-cat').value,
     title, description: desc,
-    conditions: '',
-    usefulness: Math.min(5, Math.max(1, useful)),
-    url, tags
+    conditions:  document.getElementById('f-cond').value.trim(),
+    usefulness:  parseInt(document.getElementById('f-use').value, 10),
+    url:         document.getElementById('f-url').value.trim(),
+    tags:        document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
   };
-  userCodes.push(code);
-  localStorage.setItem('municipalUserCodes', JSON.stringify(userCodes));
+
+  if (editingId) {
+    const idx = userCodes.findIndex(c => c.id === editingId);
+    if (idx !== -1) userCodes[idx] = code;
+  } else {
+    userCodes.push(code);
+  }
+  saveUserCodes();
+  closeModal();
   render();
 }
 
-function exportData() {
-  const blob = new Blob([JSON.stringify(allCodes(), null, 2)], {type:'application/json'});
+function deleteCode(id) {
+  if (!confirm('Delete this code? This cannot be undone.')) return;
+  userCodes = userCodes.filter(c => c.id !== id);
+  favorites.delete(id);
+  delete notes[id];
+  saveUserCodes(); saveFavorites(); saveNotes();
+  closeModal();
+  render();
+}
+
+// ── Export / Import ───────────────────────────────────────────────────────────
+function toggleExportDrop() {
+  exportDropOpen = !exportDropOpen;
+  document.getElementById('exportDrop').classList.toggle('open', exportDropOpen);
+}
+document.addEventListener('click', e => {
+  if (exportDropOpen && !e.target.closest('.export-wrap')) {
+    exportDropOpen = false;
+    document.getElementById('exportDrop').classList.remove('open');
+  }
+});
+
+function exportData(scope = 'all') {
+  exportDropOpen = false;
+  document.getElementById('exportDrop').classList.remove('open');
+  let codes = allCodes();
+  if (scope === 'custom')    codes = userCodes;
+  if (scope === 'favorites') codes = codes.filter(c => favorites.has(c.id));
+  const blob = new Blob([JSON.stringify(codes, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'municipal-codes.json';
+  a.download = `municipal-codes-${scope}-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
+  URL.revokeObjectURL(a.href);
 }
+
+function triggerImport() { document.getElementById('importFile').click(); }
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      let inc = JSON.parse(ev.target.result);
+      if (!Array.isArray(inc)) inc = [inc];
+      const existIds = new Set(allCodes().map(c => c.id));
+      let added = 0;
+      inc.forEach(c => {
+        if (!c.id || !c.title) return;
+        // give built-in IDs a new user prefix to avoid collision
+        const newId = BUILTIN.some(b=>b.id===c.id) ? ('user-'+Date.now()+'-'+Math.random().toString(36).slice(2)) : c.id;
+        if (existIds.has(newId)) return;
+        userCodes.push({...c, id:newId});
+        existIds.add(newId);
+        added++;
+      });
+      saveUserCodes();
+      render();
+      alert(`Imported ${added} new code(s). ${inc.length - added} duplicate(s) skipped.`);
+    } catch { alert('Could not parse file. Make sure it is JSON exported from this tool.'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── Filter dropdowns init ─────────────────────────────────────────────────────
+function buildFilters() {
+  const states = [...new Set(allCodes().map(c=>c.state))].sort();
+  const cats   = [...new Set(allCodes().map(c=>c.category))].sort();
+  const sf = document.getElementById('stateFilter');
+  const cf = document.getElementById('catFilter');
+  states.forEach(s => { const o=document.createElement('option'); o.value=s; o.text=s; sf.appendChild(o); });
+  cats.forEach(cat => { const o=document.createElement('option'); o.value=cat; o.text=catLabel(cat); cf.appendChild(o); });
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); return; }
+  if (!document.getElementById('overlay').classList.contains('hidden')) return;
+  if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+    e.preventDefault();
+    document.getElementById('search').focus();
+  }
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 buildFilters();
+applyUrlState();
 render();
 </script>
 </body>
