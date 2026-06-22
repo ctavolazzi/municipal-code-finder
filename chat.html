@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Code Chat — Municipal Code Finder</title>
+<style>
+:root {
+  --cream: #f5f0e6;
+  --cream-dark: #ede6d8;
+  --paper: #faf8f3;
+  --chocolate: #4a2c2a;
+  --choc-mid: #6b4423;
+  --burnt-orange: #e07b3c;
+  --rust: #c2410c;
+  --teal: #0d9488;
+  --gold: #d97706;
+  --line: #d4c4a8;
+  --muted: #7a6b5d;
+  --ink: #3a312b;
+  --green: #2d6a4f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.hdr {
+  background: var(--chocolate);
+  color: var(--cream);
+  padding: .8rem 1.25rem;
+  border-bottom: 3px solid var(--burnt-orange);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+  flex-shrink: 0;
+}
+.hdr-left { display: flex; align-items: center; gap: .75rem; }
+.hdr h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
+.back-link {
+  font-size: .8rem; color: var(--cream); opacity: .6;
+  text-decoration: none; border-bottom: 1px solid transparent;
+  white-space: nowrap;
+}
+.back-link:hover { opacity: 1; border-color: var(--cream); }
+.hdr-right {
+  display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-left: auto;
+}
+.hdr input[type=password], .hdr select {
+  background: rgba(255,255,255,.1);
+  border: 1.5px solid rgba(245,240,230,.3);
+  color: var(--cream);
+  padding: .32rem .6rem;
+  font-size: .82rem;
+  outline: none;
+}
+.hdr input[type=password]::placeholder { color: rgba(245,240,230,.45); }
+.hdr input[type=password]:focus, .hdr select:focus { border-color: var(--burnt-orange); }
+.hdr select option { background: var(--chocolate); color: var(--cream); }
+.hdr input[type=password] { width: 220px; }
+.save-key-btn {
+  background: none;
+  border: 1.5px solid rgba(245,240,230,.35);
+  color: var(--cream); padding: .32rem .6rem;
+  font-size: .8rem; cursor: pointer; white-space: nowrap;
+}
+.save-key-btn:hover { background: rgba(255,255,255,.1); border-color: var(--cream); }
+.key-status { font-size: .75rem; opacity: .55; white-space: nowrap; }
+
+/* ── Messages ── */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+}
+
+.msg { display: flex; gap: .6rem; max-width: min(88%, 780px); }
+.msg.user      { align-self: flex-end;   flex-direction: row-reverse; }
+.msg.assistant { align-self: flex-start; }
+
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 800;
+  flex-shrink: 0;
+  margin-top: .15rem;
+}
+.msg.user      .avatar { background: var(--burnt-orange); color: #fff; }
+.msg.assistant .avatar { background: var(--chocolate);    color: var(--cream); }
+
+.bubble {
+  padding: .7rem .95rem;
+  line-height: 1.6;
+  font-size: .91rem;
+}
+.msg.user .bubble {
+  background: var(--burnt-orange);
+  color: #fff;
+  border: 2px solid var(--chocolate);
+  box-shadow: 3px 3px 0 var(--chocolate);
+}
+.msg.assistant .bubble {
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--chocolate);
+  box-shadow: 3px 3px 0 var(--chocolate);
+}
+.bubble strong { font-weight: 700; }
+.bubble em     { font-style: italic; }
+.bubble code {
+  background: var(--cream-dark);
+  padding: .1em .3em;
+  font-family: monospace;
+  font-size: .88em;
+  color: var(--choc-mid);
+}
+.bubble a { color: var(--burnt-orange); }
+.msg.user .bubble code { background: rgba(255,255,255,.2); color: #fff; }
+.bubble .section-head { font-weight: 800; color: var(--chocolate); display: block; margin: .55rem 0 .2rem; }
+.msg.user .bubble .section-head { color: #fff; }
+
+/* typing cursor */
+.cursor { display: inline-block; width: 2px; height: 1em; background: var(--burnt-orange); vertical-align: text-bottom; animation: blink .7s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── Input bar ── */
+.input-bar {
+  background: var(--cream-dark);
+  border-top: 2px solid var(--line);
+  padding: .75rem 1rem;
+  display: flex;
+  gap: .6rem;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+#chatInput {
+  flex: 1;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: .92rem;
+  padding: .55rem .75rem;
+  resize: none;
+  outline: none;
+  min-height: 44px;
+  max-height: 140px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+#chatInput:focus { border-color: var(--burnt-orange); }
+#sendBtn {
+  background: var(--burnt-orange);
+  color: #fff;
+  border: 2px solid var(--chocolate);
+  box-shadow: 3px 3px 0 var(--chocolate);
+  padding: .55rem 1.1rem;
+  font-weight: 700;
+  font-size: .9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+#sendBtn:hover:not(:disabled) { box-shadow: 5px 5px 0 var(--burnt-orange); transform: translate(-1px,-1px); }
+#sendBtn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--chocolate); }
+.hint-text {
+  font-size: .72rem;
+  color: var(--muted);
+  text-align: center;
+  padding: .2rem 0 .1rem;
+}
+
+/* ── Error toast ── */
+.error-toast {
+  background: #fff5f5;
+  border: 2px solid var(--rust);
+  color: var(--rust);
+  padding: .5rem .85rem;
+  font-size: .85rem;
+  margin: 0 1rem .5rem;
+  display: none;
+}
+.error-toast.show { display: block; }
+
+/* ── Disclaimer ── */
+.disclaimer {
+  font-size: .72rem;
+  text-align: center;
+  color: var(--muted);
+  padding: .2rem 1rem .4rem;
+  font-style: italic;
+  flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>Property Code Chat</h1>
+    <a href="index.html" class="back-link">← Code Database</a>
+  </div>
+  <div class="hdr-right">
+    <input type="password" id="apiKey" placeholder="Groq API key (gsk_…)">
+    <button class="save-key-btn" onclick="saveKey()">Save Key</button>
+    <select id="modelSel">
+      <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+      <option value="llama-3.1-8b-instant">Llama 3.1 8B (fast)</option>
+      <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+      <option value="gemma2-9b-it">Gemma 2 9B</option>
+    </select>
+    <span class="key-status" id="keyStatus"></span>
+  </div>
+</div>
+
+<!-- ── Messages ── -->
+<div id="messages"></div>
+
+<!-- ── Error ── -->
+<div class="error-toast" id="errorToast"></div>
+
+<!-- ── Input ── -->
+<div class="input-bar">
+  <textarea id="chatInput" rows="1" placeholder="Ask anything about property owner rights, specific codes, your situation…" onkeydown="onKey(event)" oninput="autoResize(this)"></textarea>
+  <button id="sendBtn" onclick="send()">Send ↑</button>
+</div>
+<div class="hint-text">Enter to send · Shift+Enter for new line · Powered by Groq</div>
+<div class="disclaimer">Informational only — not legal advice. Verify with official sources and a licensed attorney.</div>
+
+<script>
+// ── System prompt ─────────────────────────────────────────────────────────────
+const SYSTEM = `You are a knowledgeable, direct property law research assistant. You are briefed on 37 California and federal legal provisions that benefit property owners. You help people understand their rights, identify applicable laws, and think through how to use these provisions for their specific land and property situations.
+
+Be conversational, practical, and specific. When a question involves a provision you know, cite the code reference. When you don't know, say so. Always note when professional legal advice is important for high-stakes decisions.
+
+═══ KNOWLEDGE BASE: 37 PROVISIONS ═══
+
+── OWNER-BUILDER (5 provisions) ──
+• CA B&P § 7044 — Owner-Builder Exemption: property owners can pull their own building permits and act as general contractor WITHOUT a licensed contractor, as long as they intend to occupy for 1+ year. Applies to single-family homes and structures under owner's supervision.
+• CA H&S § 17958.10–12 — HCD Title 25 (Owner-Built Rural Dwellings): allows counties to adopt alternative/relaxed building standards for limited-density owner-built rural homes. Simpler inspections, alternative materials allowed.
+• Butte County Code Ch.26 Art.VI — Local Title 25 adoption: Butte County's implementation of the above. Rural parcels in ag zones, owner does majority of work, intends to occupy.
+• CA H&S § 18551 — RV/Trailer as Temporary Dwelling: during construction of a primary residence, owner may live in an RV, trailer, or mobilehome on-site for up to 1 year (extendable by county). Eliminates paying rent elsewhere during your build.
+• CA H&S § 18551 — Manufactured Home as Permanent Residence: manufactured homes can be placed on private land as permanent residences, equivalent to site-built homes. Requires HUD standards and permanent foundation per local rules.
+
+── ADU / JADU / DENSITY (5 provisions) ──
+• CA Gov § 65852.2 — Statewide ADU Right: EVERY single-family and multi-family lot gets at least one ADU by right. Cities/counties cannot deny an ADU that meets objective standards. Owner-occupancy largely eliminated since 2020.
+• CA Gov § 65852.22 — Junior ADU (JADU): convert up to 500 sq ft of existing interior space into a separate unit. No new parking required. Owner must occupy main home or JADU.
+• CA Gov § 65852.21 / SB 9 (2022) — Urban Lot Split + Duplex: split a single-family lot into two parcels AND build a duplex on each = up to 4 units. By-right if objective standards met. Urban infill only. Owner must occupy one unit 3 years.
+• CA Gov § 65863.2 / AB 2097 (2022) — No Parking Minimums Near Transit: within 0.5 miles of a major transit stop, no minimum parking can be required for any project. Major barrier to ADU/infill development removed.
+• CA Gov § 65915 — Density Bonus: include affordable units in a project → state-mandated bonus of extra market-rate units (up to 50% more than base zoning). Cities cannot deny if objective standards met.
+
+── PERMIT EXEMPTIONS (3 provisions) ──
+• CA CBC § 105.2.1 — KEY EXEMPTIONS: NO permit needed for: detached sheds/storage under 120 sq ft, fences under 7 ft tall, retaining walls under 4 ft (from bottom of footing), decks under 30 inches above grade. Must still comply with zoning setbacks.
+• CA H&S § 17922 / CBC § 101.2 — Agricultural Building Exemption: structures used exclusively for agriculture on farms are generally exempt from state building code and permit requirements. Barns, equipment storage, crop storage.
+• CA PRC § 30610 — Coastal Zone Interior Remodel Exemption: interior remodels that don't change use or density are exempt from Coastal Development Permits (CDPs). Saves time and money for coastal property owners.
+
+── AGRICULTURAL RIGHTS (3 provisions) ──
+• CA Civ § 3482 — Farm Noise/Odor/Dust Nuisance Exemption: sounds, odors, and dust from lawful agricultural operations CANNOT be declared nuisances. Covers inherent farming activities.
+• CA H&S § 114365 — Cottage Food Law: sell homemade non-perishable foods (jams, baked goods, candy, etc.) directly to consumers from your home kitchen without a commercial kitchen license. Class B allows up to $75,000/year in sales. Annual county registration required.
+• 33 U.S.C. § 1344(f) / Clean Water Act — Federal Agricultural Exemption: normal farming activities (plowing, seeding, cultivating, harvesting, minor drainage) on EXISTING established farmland are exempt from Army Corps of Engineers Section 404 wetlands permits. Does NOT cover converting new wetlands to farmland.
+
+── RIGHT TO FARM (1 provision) ──
+• CA Civ § 3482.5 — Right to Farm Act: a farm operation in place for 3+ consecutive years CANNOT be declared a nuisance due to changed conditions (new neighbors moving nearby). Protects farms from suburban-encroachment lawsuits. Must comply with applicable laws.
+
+── GRANDFATHERING / HISTORIC USE (4 provisions) ──
+• CA Gov § 65852.25 — Nonconforming Use Protection: structures and uses lawfully established before a zoning change are "grandfathered" and may continue. Cannot expand the nonconforming use. If destroyed, check local rules on % threshold to rebuild.
+• CA Gov § 65402.5 — Right to Rebuild After Natural Disaster: property destroyed by fire, flood, or earthquake can be rebuilt at pre-disaster size, footprint, and use — EVEN IF it no longer conforms to current code. Cities cannot deny. Must apply within local time limit (often 4–5 years).
+• CCP § 318–325 — Adverse Possession: openly, continuously, exclusively, and hostilely occupying property (including paying property taxes) for 5 years can establish ownership via quiet title action. Difficult; requires legal counsel.
+• Civ § 1007 — Prescriptive Easement: 5+ years of open, continuous, hostile use of a neighbor's land (path, driveway, water access) can create a legal easement to continue that use. Must formalize via court action.
+
+── OFF-GRID SYSTEMS (7 provisions) ──
+• Water Code § 10573 / AB 1750 — Rainwater Harvesting: LEGAL in California. Residential collection for outdoor irrigation and (with treatment) indoor non-potable uses. No water right permit needed for residential use.
+• CA Gov § 65850.5 — Solar Rights Act: HOAs and CC&Rs CANNOT prohibit solar panels. Any restriction adding $1,000+ in cost or reducing efficiency 10%+ is unenforceable. HOAs may impose reasonable aesthetic restrictions but cannot ban outright.
+• CA PRC § 25982 — Solar Shade Control Act: after installing a qualifying solar system (record it with county), neighbors CANNOT allow vegetation or structures to shade more than 10% of your collectors during peak hours. Enforceable via lawsuit with damages.
+• CA PUC § 2827.1 — Net Energy Metering (NEM): solar customers get credited for excess power sent to the grid, offsetting future bills. NEM 3.0 (April 2023+) has lower export rates than prior NEM 2.0 for new applicants. Still makes solar financially viable.
+• CA Plumbing Code § 720 — Septic / OWTS Rights: property owners without sewer access have the right to install onsite wastewater systems (septic). Must pass perc test, get county environmental health approval. Alternative systems allowed where conventional fails.
+• Water Code § 13750 — Domestic Water Well: rural property owners not on public water can drill a domestic well with county permit. Must meet setbacks from septic/property lines/roads. Water quality testing required.
+• 7 U.S.C. § 1926 / USDA Rural Development: grants and low-interest loans for rural water/wastewater infrastructure including private wells and community systems in areas under 10,000 population.
+
+── HOA / VARIANCE LIMITS (2 provisions) ──
+• Civ § 4736/4745 — HOA Cannot Ban: drought-tolerant/water-efficient landscaping, clotheslines/drying racks in private areas, or composting. These rights override CC&Rs. Reasonable aesthetic restrictions allowed.
+• SHC § 1160–1162 — Private Road Maintenance Agreements: owners on shared private roads can record formal maintenance agreements establishing 50/50 (or other) cost-sharing obligations. Enforceable against neighbors who refuse to contribute.
+
+── TAX & HOMESTEAD (6 provisions) ──
+• CA Const Art. XIII A — Proposition 13: property tax capped at 1% of assessed value at time of purchase. Annual increases capped at 2%. Long-term owners pay far below market-rate taxes. Triggers reassessment on sale/transfer (with some exceptions for family transfers).
+• R&T § 218 — Homeowner's Exemption: $7,000 reduction in assessed value for owner-occupied primary residence. ~$70/year savings. Must file with county assessor. Auto-renews.
+• R&T § 434 — Williamson Act: agricultural landowners enter 10-year contracts keeping land in ag use, receiving property taxes at ag use value (often 20–75% below market value). Minimum acreage varies by county. Auto-renews. Penalty taxes on early withdrawal.
+• R&T § 205.5 — Disabled Veteran's Exemption: 100% service-connected disabled vets get $250,000 assessed value exemption (~$2,500/year savings at 1%). Low-income qualifying vets may get full exemption. Surviving spouse may qualify.
+• CCP § 704.710 — Homestead Declaration: recording a homestead declaration protects $300,000–$600,000 of home equity from unsecured creditor judgments (lawsuits, credit card debt, etc.). Does NOT protect against mortgage or property tax liens.
+• R&T § 4986.8 — First-Time Late Tax Penalty Cancellation: if you have a reasonable cause and this is your first late property tax payment in 3 years, you can apply to have the 10% penalty cancelled. One-time relief per property.
+
+── WATER RIGHTS (1 provision) ──
+• Riparian Doctrine — Riparian Water Rights: owners of land adjacent to a natural watercourse have the right to use a reasonable share of that water for beneficial use on their land. Rights are tied to the land and transfer with ownership. Does not include rights to store or divert large quantities.
+
+── NEIGHBOR RIGHTS (1 provision) ──
+• CA Civ § 841 — Fence Law / Shared Cost: adjoining landowners share EQUALLY in maintaining and replacing boundary fences. Formal notice process: serve written notice 30 days before work; neighbor has 30 days to object. Good cause required to deviate from 50/50.
+
+═══ END KNOWLEDGE BASE ═══
+
+When answering:
+- Be direct and practical, not overly formal
+- Cite the specific code reference when relevant
+- Mention important conditions and limitations
+- Note combinations of provisions that work together (e.g., owner-builder + Title 25 + RV dwelling = full self-build path)
+- Tell the user when they should consult a licensed attorney for their specific situation
+- Ask clarifying questions when the user's situation is unclear`;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let messages = [];   // {role, content}
+let streaming = false;
+
+const GREETING = `Hi! I'm your **Property Code Assistant**, briefed on **37 California and federal legal provisions** that give property owners more rights and fewer restrictions.
+
+Here's a quick map of what I know:
+
+**🏗 Owner-Builder (5)** — Build your own home without a contractor license, live in an RV on-site during construction, place manufactured homes as permanent residences.
+
+**🏠 ADU / Density (5)** — Statewide right to build ADUs and JADUs, SB 9 lot splits (up to 4 units on a single-family lot), no parking minimums near transit.
+
+**📋 Permit Exemptions (3)** — No permit needed for sheds under 120 sq ft, fences under 7 ft, retaining walls under 4 ft; farm buildings largely exempt.
+
+**🌾 Agricultural & Right to Farm (4)** — Farm noise/odors/dust can't be declared nuisances, sell homemade food up to $75k/year, federal wetlands exemptions for normal farming operations.
+
+**🔒 Grandfathering (4)** — Nonconforming use protection, right to rebuild after disaster at prior size/use, prescriptive easements, adverse possession.
+
+**☀️ Off-Grid (7)** — Rainwater harvesting, solar rights vs. HOAs, solar shade control against neighbors, net metering credits, septic/well rights, USDA rural water grants.
+
+**💰 Tax & Homestead (6)** — Prop 13 tax cap, Williamson Act ag land tax discount, disabled vet exemption, homestead declaration (up to $600k creditor protection), first-time penalty waiver.
+
+**🌊 Water & Neighbor Rights (2)** — Riparian water access rights, fence cost-sharing with neighbors.
+
+What would you like to dig into? You can ask about a specific situation, a specific code, or how these provisions might work together for your land.`;
+
+// ── HTML escape ───────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Simple markdown renderer (safe: escape first, then apply patterns) ────────
+function renderMd(text) {
+  let s = esc(text);
+  // headings → bold block
+  s = s.replace(/^#{1,3}\s+(.+)$/gm, '<span class="section-head">$1</span>');
+  // bold
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // italic
+  s = s.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+  // inline code
+  s = s.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+  // paragraphs
+  s = s.replace(/\n\n+/g, '<br><br>');
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
+// ── Key management ────────────────────────────────────────────────────────────
+function loadKey() {
+  const k = localStorage.getItem('groq:apiKey') || '';
+  if (k) {
+    document.getElementById('apiKey').value = k;
+    document.getElementById('keyStatus').textContent = '✓ Key loaded';
+  }
+}
+function saveKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (!k) { showError('Enter a Groq API key first.'); return; }
+  localStorage.setItem('groq:apiKey', k);
+  document.getElementById('keyStatus').textContent = '✓ Saved';
+  setTimeout(() => { document.getElementById('keyStatus').textContent = '✓ Key loaded'; }, 1500);
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function autoResize(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  m.scrollTop = m.scrollHeight;
+}
+
+function appendMessage(role, htmlContent, id = null) {
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  if (id) wrap.id = id;
+  const initials = role === 'user' ? 'You' : 'AI';
+  wrap.innerHTML =
+    `<div class="avatar">${initials}</div>` +
+    `<div class="bubble" id="${id ? id+'-bubble' : ''}">${htmlContent}</div>`;
+  msgs.appendChild(wrap);
+  scrollBottom();
+  return wrap;
+}
+
+// ── Groq API call with streaming ──────────────────────────────────────────────
+async function send() {
+  if (streaming) return;
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  const apiKey = (document.getElementById('apiKey').value.trim()) ||
+                 localStorage.getItem('groq:apiKey') || '';
+  if (!apiKey) {
+    showError('Enter your Groq API key in the header (get one free at console.groq.com).');
+    document.getElementById('apiKey').focus();
+    return;
+  }
+
+  const model = document.getElementById('modelSel').value;
+
+  // Append user message
+  input.value = '';
+  input.style.height = 'auto';
+  messages.push({ role: 'user', content: text });
+  appendMessage('user', esc(text));
+
+  // Streaming assistant bubble
+  const msgId = 'ai-' + Date.now();
+  const aiWrap = appendMessage('assistant', '<span class="cursor"></span>', msgId);
+  const bubble = aiWrap.querySelector('.bubble');
+
+  document.getElementById('sendBtn').disabled = true;
+  streaming = true;
+  let full = '';
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey,
+      },
+      body: JSON.stringify({
+        model,
+        stream: true,
+        messages: [
+          { role: 'system', content: SYSTEM },
+          ...messages.slice(-20),  // keep last 20 turns to stay within context
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    }
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+        try {
+          const chunk = JSON.parse(data);
+          const delta = chunk.choices?.[0]?.delta?.content;
+          if (delta) {
+            full += delta;
+            bubble.innerHTML = renderMd(full) + '<span class="cursor"></span>';
+            scrollBottom();
+          }
+        } catch { /* partial JSON, skip */ }
+      }
+    }
+
+    // Final render without cursor
+    bubble.innerHTML = renderMd(full);
+    messages.push({ role: 'assistant', content: full });
+
+  } catch (err) {
+    bubble.innerHTML = `<em style="color:var(--rust)">Error: ${esc(err.message)}</em>`;
+    messages.pop(); // remove the failed user message from history
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+  streaming = false;
+  scrollBottom();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadKey();
+appendMessage('assistant', renderMd(GREETING));
+document.getElementById('chatInput').focus();
+</script>
+</body>
+</html>
