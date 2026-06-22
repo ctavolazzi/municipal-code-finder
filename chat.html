@@ -139,6 +139,31 @@ body {
 .cursor { display: inline-block; width: 2px; height: 1em; background: var(--burnt-orange); vertical-align: text-bottom; animation: blink .7s step-end infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 
+/* search indicator */
+.search-indicator {
+  display: flex; align-items: center; gap: .45rem;
+  font-size: .82rem; color: var(--muted); font-style: italic;
+  padding: .5rem 0 .3rem;
+}
+.search-spinner {
+  width: 12px; height: 12px;
+  border: 2px solid var(--line);
+  border-top-color: var(--burnt-orange);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.executed-tools {
+  margin-top: .6rem;
+  padding: .45rem .6rem;
+  background: var(--cream-dark);
+  border-left: 2px solid var(--teal);
+  font-size: .78rem;
+  color: var(--muted);
+}
+.executed-tools span { color: var(--teal); font-weight: 700; }
+
 /* ── Input bar ── */
 .input-bar {
   background: var(--cream-dark);
@@ -221,10 +246,11 @@ body {
     <input type="password" id="apiKey" placeholder="Groq API key (gsk_…)">
     <button class="save-key-btn" onclick="saveKey()">Save Key</button>
     <select id="modelSel">
-      <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-      <option value="llama-3.1-8b-instant">Llama 3.1 8B (fast)</option>
-      <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
-      <option value="gemma2-9b-it">Gemma 2 9B</option>
+      <option value="compound-beta">🔍 Compound Beta (web search)</option>
+      <option value="compound-beta-mini">🔍 Compound Mini (web, fast)</option>
+      <option value="llama-3.3-70b-versatile">Llama 3.3 70B (no web)</option>
+      <option value="llama-3.1-8b-instant">Llama 3.1 8B (fast, no web)</option>
+      <option value="mixtral-8x7b-32768">Mixtral 8x7B (no web)</option>
     </select>
     <span class="key-status" id="keyStatus"></span>
   </div>
@@ -321,7 +347,10 @@ When answering:
 - Mention important conditions and limitations
 - Note combinations of provisions that work together (e.g., owner-builder + Title 25 + RV dwelling = full self-build path)
 - Tell the user when they should consult a licensed attorney for their specific situation
-- Ask clarifying questions when the user's situation is unclear`;
+- Ask clarifying questions when the user's situation is unclear
+- If the user gives you a URL, ALWAYS search or fetch it — do not describe or guess at its contents
+- If the user asks about a specific county, city, or jurisdiction not in your knowledge base, search for the actual current rules rather than generalizing
+- Clearly distinguish between what you know from your knowledge base vs. what you found via web search`;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let messages = [];   // {role, content}
@@ -347,7 +376,10 @@ Here's a quick map of what I know:
 
 **🌊 Water & Neighbor Rights (2)** — Riparian water access rights, fence cost-sharing with neighbors.
 
-What would you like to dig into? You can ask about a specific situation, a specific code, or how these provisions might work together for your land.`;
+What would you like to dig into? You can ask about a specific situation, a specific code, or how these provisions might work together for your land.
+
+I'm running on **Groq Compound Beta** which means I can also **search the web** — paste a URL, ask about a specific county's rules, or ask me to look something up and I'll fetch real information instead of guessing.`;
+
 
 // ── HTML escape ───────────────────────────────────────────────────────────────
 function esc(s) {
@@ -424,14 +456,18 @@ function appendMessage(role, htmlContent, id = null) {
   return wrap;
 }
 
-// ── Groq API call with streaming ──────────────────────────────────────────────
+// ── Groq API call ─────────────────────────────────────────────────────────────
+function isWebModel(model) {
+  return model.startsWith('compound-beta');
+}
+
 async function send() {
   if (streaming) return;
-  const input = document.getElementById('chatInput');
-  const text  = input.value.trim();
+  const input  = document.getElementById('chatInput');
+  const text   = input.value.trim();
   if (!text) return;
 
-  const apiKey = (document.getElementById('apiKey').value.trim()) ||
+  const apiKey = document.getElementById('apiKey').value.trim() ||
                  window.GROQ_KEY ||
                  localStorage.getItem('groq:apiKey') || '';
   if (!apiKey) {
@@ -441,21 +477,34 @@ async function send() {
   }
 
   const model = document.getElementById('modelSel').value;
+  const webSearch = isWebModel(model);
 
-  // Append user message
   input.value = '';
   input.style.height = 'auto';
   messages.push({ role: 'user', content: text });
   appendMessage('user', esc(text));
 
-  // Streaming assistant bubble
-  const msgId = 'ai-' + Date.now();
-  const aiWrap = appendMessage('assistant', '<span class="cursor"></span>', msgId);
+  // Assistant bubble — start with search indicator if web model
+  const msgId  = 'ai-' + Date.now();
+  const aiWrap = appendMessage('assistant',
+    webSearch
+      ? `<div class="search-indicator"><div class="search-spinner"></div>Searching the web…</div>`
+      : `<span class="cursor"></span>`,
+    msgId);
   const bubble = aiWrap.querySelector('.bubble');
 
   document.getElementById('sendBtn').disabled = true;
   streaming = true;
   let full = '';
+  let searchedQueries = [];
+  let firstToken = false;
+
+  // Show "searching" timer so user knows it's working
+  const searchTimer = webSearch ? setTimeout(() => {
+    if (!firstToken) {
+      bubble.innerHTML = `<div class="search-indicator"><div class="search-spinner"></div>Searching the web… (this can take a few seconds)</div>`;
+    }
+  }, 3000) : null;
 
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -469,7 +518,7 @@ async function send() {
         stream: true,
         messages: [
           { role: 'system', content: SYSTEM },
-          ...messages.slice(-20),  // keep last 20 turns to stay within context
+          ...messages.slice(-20),
         ],
       }),
     });
@@ -488,7 +537,7 @@ async function send() {
       if (done) break;
       buf += decoder.decode(value, { stream: true });
       const lines = buf.split('\n');
-      buf = lines.pop(); // keep incomplete line
+      buf = lines.pop();
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
@@ -496,23 +545,56 @@ async function send() {
         if (data === '[DONE]') break;
         try {
           const chunk = JSON.parse(data);
-          const delta = chunk.choices?.[0]?.delta?.content;
-          if (delta) {
-            full += delta;
+          const delta = chunk.choices?.[0]?.delta;
+
+          // Capture any executed tool queries compound-beta reports mid-stream
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const q = tc.function?.arguments;
+              if (q) {
+                try { searchedQueries.push(JSON.parse(q).query || q); } catch { searchedQueries.push(q); }
+              }
+            }
+          }
+
+          // Also capture executed_tools from top-level chunk (compound-beta format)
+          if (chunk.x_groq?.executed_tools) {
+            for (const t of chunk.x_groq.executed_tools) {
+              if (t.input?.query && !searchedQueries.includes(t.input.query)) {
+                searchedQueries.push(t.input.query);
+              }
+            }
+          }
+
+          const content = delta?.content;
+          if (content) {
+            if (!firstToken) {
+              firstToken = true;
+              if (searchTimer) clearTimeout(searchTimer);
+              bubble.innerHTML = '';
+            }
+            full += content;
             bubble.innerHTML = renderMd(full) + '<span class="cursor"></span>';
             scrollBottom();
           }
-        } catch { /* partial JSON, skip */ }
+        } catch { /* partial JSON */ }
       }
     }
 
-    // Final render without cursor
-    bubble.innerHTML = renderMd(full);
+    if (searchTimer) clearTimeout(searchTimer);
+
+    // Final render
+    let finalHtml = renderMd(full);
+    if (searchedQueries.length) {
+      finalHtml += `<div class="executed-tools"><span>🔍 Searched:</span> ${searchedQueries.map(q => esc(q)).join(' · ')}</div>`;
+    }
+    bubble.innerHTML = finalHtml;
     messages.push({ role: 'assistant', content: full });
 
   } catch (err) {
+    if (searchTimer) clearTimeout(searchTimer);
     bubble.innerHTML = `<em style="color:var(--rust)">Error: ${esc(err.message)}</em>`;
-    messages.pop(); // remove the failed user message from history
+    messages.pop();
   }
 
   document.getElementById('sendBtn').disabled = false;
