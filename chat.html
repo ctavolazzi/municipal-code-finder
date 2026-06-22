@@ -244,6 +244,7 @@ body {
 <div class="hint-text">Enter to send · Shift+Enter for new line · Powered by Groq</div>
 <div class="disclaimer">Informational only — not legal advice. Verify with official sources and a licensed attorney.</div>
 
+<script src="config.js" onerror="void(0)"></script>
 <script>
 // ── System prompt ─────────────────────────────────────────────────────────────
 const SYSTEM = `You are a knowledgeable, direct property law research assistant. You are briefed on 37 California and federal legal provisions that benefit property owners. You help people understand their rights, identify applicable laws, and think through how to use these provisions for their specific land and property situations.
@@ -373,7 +374,7 @@ function renderMd(text) {
 
 // ── Key management ────────────────────────────────────────────────────────────
 function loadKey() {
-  const k = localStorage.getItem('groq:apiKey') || '';
+  const k = window.GROQ_KEY || localStorage.getItem('groq:apiKey') || '';
   if (k) {
     document.getElementById('apiKey').value = k;
     document.getElementById('keyStatus').textContent = '✓ Key loaded';
@@ -431,6 +432,7 @@ async function send() {
   if (!text) return;
 
   const apiKey = (document.getElementById('apiKey').value.trim()) ||
+                 window.GROQ_KEY ||
                  localStorage.getItem('groq:apiKey') || '';
   if (!apiKey) {
     showError('Enter your Groq API key in the header (get one free at console.groq.com).');
